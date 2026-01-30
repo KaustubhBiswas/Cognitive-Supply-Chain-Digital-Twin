@@ -1,0 +1,80 @@
+[project]
+name = "supply-chain-digital-twin"
+version = "0.1.0"
+description = "AI-powered supply chain cognitive digital twin combining Mesa simulation, GNN forecasting, and LangGraph multi-agent cognition"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Supply Chain Digital Twin Team"}
+]
+
+dependencies = [
+    # Simulation Framework
+    "mesa>=3.0.0",
+    
+    # Deep Learning (CPU-optimized for Intel Iris Xe)
+    "torch>=2.0.0",
+    "torch-geometric>=2.4.0",
+    "torch-geometric-temporal>=0.54.0",
+    
+    # LLM/Agents - Using Groq for fast, free cloud inference
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0",
+    "langchain-groq>=0.2.0",
+    
+    # Data Processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "networkx>=3.0",
+    "scipy>=1.11.0",
+    
+    # Visualization
+    "matplotlib>=3.7.0",
+    "plotly>=5.15.0",
+    "streamlit>=1.30.0",
+    
+    # Time Series Baseline
+    "statsmodels>=0.14.0",
+    
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.25.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+[project.scripts]
+run-simulation = "src.integration.dashboard:main"
+train-gnn = "src.perception.trainer:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

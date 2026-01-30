@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-01-30T11:05:45.943086",
+  "best_epoch": 3,
+  "best_val_loss": 0.297280844421156,
+  "test_metrics": {
+    "mse": 0.43209871649742126,
+    "rmse": 0.6573421359062195,
+    "mae": 0.4228980839252472,
+    "mape": 104.66935729980469,
+    "loss": 0.43209874373860657
+  },
+  "training_config": {
+    "epochs": 5,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "weight_decay": 1e-05,
+    "patience": 15,
+    "min_delta": 0.0001,
+    "scheduler_type": "plateau",
+    "scheduler_patience": 5,
+    "scheduler_factor": 0.5,
+    "checkpoint_dir": "models",
+    "save_best_only": true,
+    "device": "auto",
+    "log_interval": 1,
+    "seed": 42
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6141888897304666,
+      "val_loss": 0.6021682745026004,
+      "train_mae": 0.5818104147911072,
+      "val_mae": 0.5638126134872437,
+      "train_mape": 404.595947265625,
+      "val_mape": 358.774169921875,
+      "learning_rate": 0.01
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.44083469156941324,
+      "val_loss": 0.4699725479848923,
+      "train_mae": 0.47830021381378174,
+      "val_mae": 0.47560298442840576,
+      "train_mape": 397.6387634277344,
+      "val_mape": 197.67774963378906,
+      "learning_rate": 0.01
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.3259845236699059,
+      "val_loss": 0.297280844421156,
+      "train_mae": 0.42297154664993286,
+      "val_mae": 0.3716217577457428,
+      "train_mape": 301.37628173828125,
+      "val_mape": 217.1007843017578,
+      "learning_rate": 0.01
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.2436440528357682,
+      "val_loss": 0.3536517033653875,
+      "train_mae": 0.3785909116268158,
+      "val_mae": 0.3648946285247803,
+      "train_mape": 282.857666015625,
+      "val_mape": 160.75369262695312,
+      "learning_rate": 0.01
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.29571273519772373,
+      "val_loss": 0.3930590465184181,
+      "train_mae": 0.39797183871269226,
+      "val_mae": 0.39660659432411194,
+      "train_mape": 290.15594482421875,
+      "val_mape": 222.5894012451172,
+      "learning_rate": 0.01
+    }
+  ]
+}
