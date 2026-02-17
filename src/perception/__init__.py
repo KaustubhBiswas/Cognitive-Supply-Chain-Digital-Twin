@@ -6,6 +6,7 @@ This module provides:
 - Dataset utilities for PyTorch Geometric Temporal
 - Training pipeline with metrics and checkpointing
 - Inference utilities for making predictions
+- ARIMA baseline for model comparison
 """
 
 from .dataset import DatasetConfig, SupplyChainTemporalDataset, load_dataset
@@ -14,6 +15,7 @@ from .model import (A3TGCNForecaster, CustomGNNForecaster, ModelConfig,
 from .predictor import PredictionResult, SupplyChainPredictor, create_predictor
 from .trainer import (ForecastingTrainer, TrainingConfig, TrainingMetrics,
                       train_model)
+from .baseline import ARIMABaseline, ARIMAConfig, MultiNodeARIMA, ForecastResult
 
 __all__ = [
     # Dataset
@@ -36,4 +38,9 @@ __all__ = [
     "PredictionResult",
     "SupplyChainPredictor",
     "create_predictor",
+    # Baseline
+    "ARIMAConfig",
+    "ARIMABaseline",
+    "MultiNodeARIMA",
+    "ForecastResult",
 ]
