@@ -9,58 +9,41 @@ Components:
 - Tools: LangChain tools wrapping simulation and forecasting
 - Agents: Supervisor, Analyst, and Negotiator agents
 - Graph: LangGraph StateGraph workflow
+- LLM: Flexible LLM initialization (Groq cloud or Ollama local)
+
+Usage:
+    from src.cognition import (
+        create_supply_chain_graph, create_initial_state, initialize_tools,
+        Alert, AlertType, AlertSeverity, create_groq_llm,
+    )
+    
+    # Initialize LLM (optional - uses rule-based fallback if None)
+    llm = create_groq_llm(api_key="gsk_...")  # or create_ollama_llm()
+    
+    # Create workflow
+    graph = create_supply_chain_graph(llm=llm)
+    state = create_initial_state(alert=my_alert)
+    result = graph.invoke(state, config={"configurable": {"thread_id": "1"}})
 """
 
-from .state import (
-    # Enums
-    AlertSeverity,
-    AlertType,
-    RecommendationType,
-    AgentRoute,
-    # Dataclasses
-    Alert,
-    Recommendation,
-    SimulationSnapshot,
-    ForecastData,
-    # State
-    SupplyChainState,
-    # Helper functions
-    create_initial_state,
-    add_recommendation,
-    add_forecast,
-    # Constants
-    ALERT_THRESHOLDS,
-    DECISION_THRESHOLDS,
-)
-
-from .tools import (
-    # Initialization
-    initialize_tools,
-    is_initialized,
-    # Forecasting tools
-    forecast_demand,
-    # Inventory tools
-    get_node_inventory,
-    get_all_inventories,
-    get_historical_orders,
-    # Metrics tools
-    get_supply_chain_metrics,
-    compute_bullwhip_ratio,
-    # Action tools
-    propose_order_adjustment,
-    propose_policy_change,
-    # Network tools
-    get_upstream_suppliers,
-    get_downstream_customers,
-    # Utilities
-    get_all_tools,
-    get_tool_descriptions,
-)
-
-from .supervisor import create_supervisor_agent
 from .analyst import create_analyst_agent
+from .graph import FallbackGraph, create_supply_chain_graph
+from .llm import (DEFAULT_GROQ_MODEL, DEFAULT_OLLAMA_MODEL, GROQ_MODELS,
+                  OLLAMA_MODELS, LLMConfig, create_groq_llm, create_llm,
+                  create_ollama_llm)
 from .negotiator import create_negotiator_agent
-from .graph import create_supply_chain_graph, FallbackGraph
+from .state import (  # Enums; Dataclasses; State; Helper functions; Constants
+    ALERT_THRESHOLDS, DECISION_THRESHOLDS, AgentRoute, Alert, AlertSeverity,
+    AlertType, ForecastData, Recommendation, RecommendationType,
+    SimulationSnapshot, SupplyChainState, add_forecast, add_recommendation,
+    create_initial_state)
+from .supervisor import create_supervisor_agent
+from .tools import (  # Initialization; Forecasting tools; Inventory tools; Metrics tools; Action tools; Network tools; Utilities
+    compute_bullwhip_ratio, forecast_demand, get_all_inventories,
+    get_all_tools, get_downstream_customers, get_historical_orders,
+    get_node_inventory, get_supply_chain_metrics, get_tool_descriptions,
+    get_upstream_suppliers, initialize_tools, is_initialized,
+    propose_order_adjustment, propose_policy_change)
 
 __all__ = [
     # State - Enums
@@ -110,4 +93,13 @@ __all__ = [
     # Graph
     "create_supply_chain_graph",
     "FallbackGraph",
+    # LLM
+    "LLMConfig",
+    "create_llm",
+    "create_groq_llm",
+    "create_ollama_llm",
+    "GROQ_MODELS",
+    "OLLAMA_MODELS",
+    "DEFAULT_GROQ_MODEL",
+    "DEFAULT_OLLAMA_MODEL",
 ]

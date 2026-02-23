@@ -10,15 +10,10 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .state import SupplyChainState, RecommendationType
-from .tools import (
-    forecast_demand,
-    get_historical_orders,
-    compute_bullwhip_ratio,
-    get_node_inventory,
-    get_all_inventories,
-    get_supply_chain_metrics,
-)
+from .state import RecommendationType, SupplyChainState
+from .tools import (compute_bullwhip_ratio, forecast_demand,
+                    get_all_inventories, get_historical_orders,
+                    get_node_inventory, get_supply_chain_metrics)
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +122,13 @@ def create_analyst_agent(llm=None):
         else:
             analysis = _rule_based_analysis(state)
 
+        # Ensure assessed_severity is computed (for both LLM and rule-based paths)
+        if "assessed_severity" not in analysis:
+            alert = state.get("current_alert", {})
+            metrics = analysis.get("metrics", {})
+            risk_level = analysis.get("risk_level", "low")
+            analysis["assessed_severity"] = _compute_severity(risk_level, alert, metrics)
+
         # Convert recommendations to state format
         recommendations = state.get("recommendations", []).copy()
         for rec in analysis.get("recommendations", []):
@@ -219,6 +221,82 @@ def _gather_analysis_data(state: SupplyChainState) -> Dict[str, Any]:
             data["affected_node_details"] = node_data
 
     return data
+
+
+def _compute_severity(risk_level: str, alert: Dict[str, Any], metrics: Dict[str, Any]) -> str:
+    """
+    Compute assessed severity dynamically based on risk level, alert context, and metrics.
+    
+    The cognition brain determines severity by analyzing:
+    - Base risk level from rule-based analysis
+    - Alert type and specific details
+    - Supply chain metrics (bullwhip ratio, stockouts, etc.)
+    
+    Returns:
+        str: Assessed severity - "low", "medium", "high", or "critical"
+    """
+    if not alert:
+        return "low"
+    
+    alert_type = alert.get("type", "")
+    details = alert.get("details", {})
+    affected_nodes = alert.get("affected_nodes", [])
+    
+    # Start with base severity from risk level
+    severity_score = {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(risk_level, 1)
+    
+    # Escalate based on alert type severity weights
+    type_weights = {
+        "stockout": 1.5,           # Stockouts are critical - direct customer impact
+        "demand_spike": 1.2,       # Demand spikes can cascade
+        "bullwhip_detected": 1.3,  # Bullwhip amplifies problems
+        "inventory_low": 1.1,      # Warning level
+        "forecast_deviation": 1.0, # Informational
+    }
+    severity_score *= type_weights.get(alert_type, 1.0)
+    
+    # Escalate based on number of affected nodes
+    num_affected = len(affected_nodes) if affected_nodes else 0
+    if num_affected > 5:
+        severity_score *= 1.3
+    elif num_affected > 2:
+        severity_score *= 1.1
+    
+    # Escalate based on specific metrics
+    bullwhip_ratio = metrics.get("bullwhip_ratio", 1.0)
+    if bullwhip_ratio > 3.0:
+        severity_score *= 1.2
+    
+    num_stockouts = metrics.get("num_stockouts", 0)
+    if num_stockouts > 3:
+        severity_score *= 1.3
+    elif num_stockouts > 0:
+        severity_score *= 1.1
+    
+    # Escalate based on alert-specific details
+    if alert_type == "demand_spike":
+        current = details.get("current", 0)
+        previous = details.get("previous", 1)
+        if previous > 0 and current / previous > 2.5:
+            severity_score *= 1.2
+    elif alert_type == "bullwhip_detected":
+        ratio = details.get("ratio", 1.0)
+        if ratio > 3.0:
+            severity_score *= 1.2
+    elif alert_type == "forecast_deviation":
+        deviation = details.get("deviation_pct", 0)
+        if deviation > 40:
+            severity_score *= 1.2
+    
+    # Map score to severity level
+    if severity_score >= 4.5:
+        return "critical"
+    elif severity_score >= 3.0:
+        return "high"
+    elif severity_score >= 2.0:
+        return "medium"
+    else:
+        return "low"
 
 
 def _rule_based_analysis(state: SupplyChainState) -> Dict[str, Any]:
@@ -326,10 +404,14 @@ def _rule_based_analysis(state: SupplyChainState) -> Dict[str, Any]:
 
     metrics["demand_trend"] = "stable"
     metrics["risk_score"] = {"low": 0.2, "medium": 0.5, "high": 0.8, "critical": 1.0}.get(risk_level, 0.5)
+    
+    # Compute assessed severity based on risk_level and alert context
+    assessed_severity = _compute_severity(risk_level, alert, metrics)
 
     return {
         "findings": ". ".join(findings),
         "risk_level": risk_level,
+        "assessed_severity": assessed_severity,
         "recommendations": recommendations,
         "metrics": metrics,
     }

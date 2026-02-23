@@ -11,17 +11,26 @@ Modules Demonstrated:
 2. Perception Module - GNN-based demand forecasting with PyTorch Geometric
 3. Data Module - Visualization and analysis tools
 4. Cognition Module - LangGraph multi-agent system (Supervisor, Analyst, Negotiator)
+
+LLM Configuration:
+- Set GROQ_API_KEY in .env file for LLM-powered cognition
+- Without API key, falls back to rule-based cognition
 """
 
+import os
 import time
 from datetime import datetime
 
 import networkx as nx
+from dotenv import load_dotenv
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+
+# Load environment variables from .env
+load_dotenv()
 
 console = Console()
 
@@ -287,7 +296,8 @@ def demo_cognition_module():
                        border_style="yellow"))
     
     from src.cognition import (Alert, AlertSeverity, AlertType, FallbackGraph,
-                               create_initial_state, create_supply_chain_graph,
+                               create_groq_llm, create_initial_state,
+                               create_supply_chain_graph,
                                get_tool_descriptions, initialize_tools)
     from src.data.parser import create_synthetic_supply_graph
     from src.simulation import SupplyChainModel
@@ -310,6 +320,20 @@ def demo_cognition_module():
     
     # Initialize tools
     initialize_tools(simulation=model)
+    
+    # Initialize LLM if API key available
+    llm = None
+    groq_api_key = os.getenv("GROQ_API_KEY", "")
+    llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+    if groq_api_key:
+        console.print(f"  [cyan]Initializing LLM ({llm_model})...[/cyan]")
+        llm = create_groq_llm(api_key=groq_api_key, model=llm_model)
+        if llm:
+            console.print(f"  [green]✓ LLM connected: Groq/{llm_model}[/green]")
+        else:
+            console.print("  [yellow]⚠ LLM connection failed, using rule-based fallback[/yellow]")
+    else:
+        console.print("  [dim]No GROQ_API_KEY in .env, using rule-based fallback[/dim]")
     
     # Show agent architecture
     arch_table = Table(title="Multi-Agent Architecture", box=box.ROUNDED)
@@ -350,19 +374,20 @@ def demo_cognition_module():
     console.print("\n[cyan]Creating alert and running cognitive workflow...[/cyan]")
     
     alert = Alert(
-        alert_type=AlertType.DEMAND_SPIKE,
-        severity=AlertSeverity.HIGH,
+        alert_type=AlertType.CAPACITY_CONSTRAINT,
+        severity=AlertSeverity.UNASSESSED,  # Severity determined dynamically by cognition
         affected_nodes=[5, 6],
-        details={"magnitude": 45.0, "duration": 5}
+        details={"current": 180, "previous": 80}  # 2.25x spike for proper analysis
     )
     
-    console.print(f"  Alert: [yellow]{alert.alert_type.value}[/yellow] (Severity: {alert.severity.value})")
+    console.print(f"  Alert: [yellow]{alert.alert_type.value}[/yellow] (Initial: {alert.severity.value} - to be assessed)")
     console.print(f"  Affected nodes: {alert.affected_nodes}")
     
-    # Create graph (uses FallbackGraph if LangGraph not installed)
-    graph = create_supply_chain_graph(llm=None)
-    graph_type = "LangGraph" if not isinstance(graph, FallbackGraph) else "FallbackGraph (rule-based)"
-    console.print(f"  Workflow type: [cyan]{graph_type}[/cyan]")
+    # Create graph with LLM (or None for rule-based)
+    graph = create_supply_chain_graph(llm=llm)
+    graph_type = "LangGraph" if not isinstance(graph, FallbackGraph) else "FallbackGraph"
+    llm_status = "with LLM" if llm else "rule-based"
+    console.print(f"  Workflow type: [cyan]{graph_type} ({llm_status})[/cyan]")
     
     # Run workflow
     initial_state = create_initial_state(alert=alert)
@@ -384,7 +409,10 @@ def demo_cognition_module():
     result_table.add_row("Recommendations", str(len(result.get("recommendations", []))))
     
     if result.get("analysis_results"):
+        analysis = result.get("analysis_results", {})
+        assessed_severity = analysis.get("assessed_severity", "unknown")
         result_table.add_row("Analysis", "✓ Completed")
+        result_table.add_row("Assessed Severity", f"[bold yellow]{assessed_severity.upper()}[/bold yellow]")
     if result.get("negotiation_results"):
         result_table.add_row("Negotiation", "✓ Completed")
     

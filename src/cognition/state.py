@@ -9,7 +9,8 @@ cognitive workflow processes alerts and makes decisions.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union
+from typing import (Annotated, Any, Dict, List, Literal, Optional, TypedDict,
+                    Union)
 
 try:
     from langchain_core.messages import BaseMessage
@@ -30,6 +31,7 @@ except ImportError:
 
 class AlertSeverity(str, Enum):
     """Severity levels for supply chain alerts."""
+    UNASSESSED = "unassessed"  # Initial state before cognitive assessment
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
