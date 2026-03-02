@@ -11,9 +11,13 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from .state import RecommendationType, SupplyChainState
-from .tools import (compute_bullwhip_ratio, forecast_demand,
-                    get_all_inventories, get_historical_orders,
-                    get_node_inventory, get_supply_chain_metrics)
+from .tools import (analyze_disruption_propagation, compute_bullwhip_ratio,
+                    estimate_time_to_impact, forecast_demand,
+                    generate_cross_node_recommendations,
+                    generate_proactive_alerts, get_all_inventories,
+                    get_historical_orders, get_jit_recommendations,
+                    get_node_inventory, get_supply_chain_metrics,
+                    simulate_disruption_ripple)
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +223,74 @@ def _gather_analysis_data(state: SupplyChainState) -> Dict[str, Any]:
                 pass
         if node_data:
             data["affected_node_details"] = node_data
+        
+        # JIT: Analyze disruption propagation for affected nodes
+        alert_type = alert.get("alert_type", alert.get("type", "stockout"))
+        if isinstance(alert_type, str):
+            disruption_type = alert_type
+        else:
+            disruption_type = getattr(alert_type, "value", "stockout")
+        
+        try:
+            jit_analysis = get_jit_recommendations.invoke({
+                "disrupted_nodes": affected[:5],
+                "disruption_type": disruption_type,
+            })
+            if isinstance(jit_analysis, dict) and jit_analysis.get("success"):
+                data["jit_propagation"] = {
+                    "total_affected_nodes": jit_analysis.get("total_affected_nodes", 0),
+                    "priority_actions": jit_analysis.get("priority_actions", [])[:3],
+                    "estimated_recovery_time": jit_analysis.get("estimated_recovery_time", 0),
+                    "impact_summary": jit_analysis.get("impact_summary", {}),
+                }
+        except Exception as e:
+            logger.debug(f"JIT propagation analysis failed: {e}")
+        
+        # JIT: Get time-to-impact calculations
+        try:
+            if affected:
+                time_impact = estimate_time_to_impact.invoke({
+                    "source_node_id": affected[0],
+                })
+                if isinstance(time_impact, dict) and time_impact.get("success"):
+                    data["time_to_impact"] = {
+                        "source_node": time_impact.get("source_node"),
+                        "earliest_impact": time_impact.get("earliest_impact"),
+                        "average_propagation_time": time_impact.get("average_propagation_time"),
+                        "total_nodes_affected": time_impact.get("total_nodes_affected"),
+                    }
+        except Exception as e:
+            logger.debug(f"Time-to-impact analysis failed: {e}")
+        
+        # JIT: Get cross-node coordinated recommendations
+        try:
+            cross_node = generate_cross_node_recommendations.invoke({
+                "disrupted_nodes": affected[:5],
+                "optimization_goal": "minimize_impact",
+            })
+            if isinstance(cross_node, dict) and cross_node.get("success"):
+                data["cross_node_coordination"] = {
+                    "coordination_groups": cross_node.get("coordination_groups", [])[:3],
+                    "sequence": cross_node.get("sequence", [])[:5],
+                    "network_impact_score": cross_node.get("network_impact_score", 0),
+                }
+        except Exception as e:
+            logger.debug(f"Cross-node recommendation analysis failed: {e}")
+    
+    # JIT: Generate proactive alerts for entire network
+    try:
+        proactive = generate_proactive_alerts.invoke({})
+        if isinstance(proactive, dict) and proactive.get("success"):
+            proactive_alerts = proactive.get("proactive_alerts", [])
+            risk_nodes = proactive.get("risk_nodes", [])
+            if proactive_alerts or risk_nodes:
+                data["proactive_alerts"] = {
+                    "predictive_alerts": proactive_alerts[:5],
+                    "risk_nodes": risk_nodes[:5],
+                    "total_nodes_at_risk": proactive.get("total_nodes_at_risk", 0),
+                }
+    except Exception as e:
+        logger.debug(f"Proactive alert generation failed: {e}")
 
     return data
 
@@ -398,6 +470,139 @@ def _rule_based_analysis(state: SupplyChainState) -> Dict[str, Any]:
 
         else:
             findings.append(f"Alert: {alert_type} at nodes {affected}")
+        
+        # JIT: Add propagation analysis findings
+        try:
+            propagation = analyze_disruption_propagation.invoke({
+                "node_id": affected[0] if affected else 0,
+                "disruption_type": str(alert_type) if isinstance(alert_type, str) else getattr(alert_type, "value", "stockout"),
+                "disruption_severity": 1.0,
+            })
+            if isinstance(propagation, dict) and propagation.get("success"):
+                total_affected = propagation.get("total_nodes_affected", 0)
+                if total_affected > 0:
+                    findings.append(f"JIT Analysis: Disruption will propagate to {total_affected} additional nodes")
+                    most_at_risk = propagation.get("most_at_risk", [])
+                    if most_at_risk:
+                        at_risk_ids = [n["node_id"] for n in most_at_risk[:3]]
+                        findings.append(f"Most at-risk nodes: {at_risk_ids}")
+                    
+                    # Add JIT-based recommendations
+                    critical_path = propagation.get("critical_path", [])
+                    if len(critical_path) > 1:
+                        for node_info in critical_path[1:3]:  # First 2 downstream nodes
+                            recommendations.append({
+                                "type": "jit_buffer_increase",
+                                "target_nodes": [node_info["node_id"]],
+                                "parameters": {"urgency": "proactive", "severity": node_info.get("severity", 0.5)},
+                                "reasoning": f"Proactive buffer increase before disruption arrives (severity: {node_info.get('severity', 0.5):.2f})",
+                                "confidence": 0.75,
+                            })
+                    
+                    metrics["jit_propagation"] = {
+                        "total_affected": total_affected,
+                        "critical_path_length": len(critical_path),
+                        "most_at_risk": [n["node_id"] for n in most_at_risk[:3]],
+                    }
+        except Exception as e:
+            logger.debug(f"JIT propagation failed in rule-based analysis: {e}")
+        
+        # JIT: Time-to-impact calculator for precise timing
+        try:
+            if affected:
+                time_impact = estimate_time_to_impact.invoke({
+                    "source_node_id": affected[0],
+                })
+                if isinstance(time_impact, dict) and time_impact.get("success"):
+                    earliest = time_impact.get("earliest_impact", {})
+                    if earliest.get("node_id"):
+                        findings.append(
+                            f"Earliest impact in {earliest.get('time', 0)} steps at node {earliest.get('node_id')}"
+                        )
+                        # Add urgent recommendation for earliest impact node
+                        if earliest.get("time", 999) <= 2:
+                            recommendations.append({
+                                "type": "emergency_buffer_increase",
+                                "target_nodes": [earliest.get("node_id")],
+                                "parameters": {"urgency": "critical", "time_available": earliest.get("time")},
+                                "reasoning": f"URGENT: Impact arrives in {earliest.get('time')} steps - immediate action required",
+                                "confidence": 0.9,
+                            })
+                    metrics["time_to_impact"] = {
+                        "earliest_node": earliest.get("node_id"),
+                        "earliest_time": earliest.get("time", 0),
+                        "avg_propagation": time_impact.get("average_propagation_time", 0),
+                    }
+        except Exception as e:
+            logger.debug(f"Time-to-impact failed: {e}")
+        
+        # JIT: Cross-node coordinated recommendations
+        try:
+            cross_node = generate_cross_node_recommendations.invoke({
+                "disrupted_nodes": affected[:5],
+                "optimization_goal": "minimize_impact",
+            })
+            if isinstance(cross_node, dict) and cross_node.get("success"):
+                coord_groups = cross_node.get("coordination_groups", [])
+                if coord_groups:
+                    findings.append(f"Identified {len(coord_groups)} node groups requiring coordinated response")
+                    
+                    # Add coordinated recommendations
+                    for group in coord_groups[:2]:
+                        group_nodes = group.get("nodes", [])
+                        if group_nodes:
+                            recommendations.append({
+                                "type": "coordinate_orders",
+                                "target_nodes": group_nodes,
+                                "parameters": {
+                                    "coordination_type": group.get("coordination_type", "synchronized_ordering"),
+                                    "echelon": group.get("echelon", 0),
+                                },
+                                "reasoning": group.get("reason", "Coordinate orders across nodes to prevent bullwhip"),
+                                "confidence": 0.7,
+                            })
+                
+                metrics["cross_node"] = {
+                    "coordination_groups": len(coord_groups),
+                    "network_impact_score": cross_node.get("network_impact_score", 0),
+                }
+        except Exception as e:
+            logger.debug(f"Cross-node recommendations failed: {e}")
+        
+        # JIT: Proactive alerts for predictive warnings
+        try:
+            proactive = generate_proactive_alerts.invoke({})
+            if isinstance(proactive, dict) and proactive.get("success"):
+                proactive_alerts = proactive.get("proactive_alerts", [])
+                if proactive_alerts:
+                    findings.append(f"Generated {len(proactive_alerts)} proactive alerts for predicted disruptions")
+                    
+                    # Add proactive recommendations for predicted impacts
+                    for pa in proactive_alerts[:3]:
+                        if pa.get("predicted_severity", 0) > 0.5:
+                            recommendations.append({
+                                "type": "proactive_preparation",
+                                "target_nodes": [pa.get("node_id")],
+                                "parameters": {
+                                    "predicted_time": pa.get("estimated_time_to_impact"),
+                                    "action": pa.get("recommended_action", "increase_buffer"),
+                                },
+                                "reasoning": f"Proactive: {pa.get('predicted_issue', 'Future disruption predicted')}",
+                                "confidence": 0.7,
+                            })
+                
+                risk_nodes = proactive.get("risk_nodes", [])
+                if risk_nodes:
+                    findings.append(f"{len(risk_nodes)} nodes identified as vulnerable even without current alerts")
+                    
+                metrics["proactive"] = {
+                    "alerts_generated": len(proactive_alerts),
+                    "risk_nodes": len(risk_nodes),
+                }
+        except Exception as e:
+            logger.debug(f"Proactive alerts failed: {e}")
+        except Exception as e:
+            logger.debug(f"JIT propagation failed in rule-based analysis: {e}")
 
     if not findings:
         findings.append("No significant issues detected")

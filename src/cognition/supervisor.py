@@ -224,12 +224,21 @@ def _rule_based_decision(state: SupplyChainState) -> Dict[str, Any]:
     # If we have analysis but not negotiation, and recommendations exist
     if analysis and not negotiation:
         recs = analysis.get("recommendations", [])
-        if any(
-            r.get("type") in ("adjust_order_quantity",) for r in recs
-        ):
+        # Trigger negotiator for any recommendation that requires coordination
+        negotiation_types = (
+            "adjust_order_quantity",
+            "adjust_safety_stock", 
+            "adjust_reorder_point",
+            "jit_buffer_increase",
+            "emergency_buffer_increase",
+            "coordinate_orders",
+            "proactive_preparation",
+            "synchronized_ordering",
+        )
+        if any(r.get("type") in negotiation_types for r in recs):
             return {
                 "action": "negotiate",
-                "reasoning": "Analyst recommends order adjustments, need negotiator for coordination",
+                "reasoning": "Analyst recommends adjustments requiring supply chain coordination",
                 "message": f"Please coordinate these adjustments: {json.dumps(recs)}",
                 "priority": analysis.get("risk_level", "medium"),
             }

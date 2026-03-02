@@ -169,13 +169,13 @@ def main():
         messages = result.get("messages", [])
         if messages:
             print(f"\n    AGENT MESSAGES ({len(messages)} total):")
-            for msg in messages[-5:]:  # Show last 5 messages
+            for i, msg in enumerate(messages, 1):  # Show all messages
                 if hasattr(msg, "content"):
-                    content = msg.content[:100] + "..." if len(msg.content) > 100 else msg.content
-                    print(f"      - {content}")
+                    content = msg.content
                 else:
-                    content = str(msg)[:100] + "..." if len(str(msg)) > 100 else str(msg)
-                    print(f"      - {content}")
+                    content = str(msg)
+                print(f"      {i}. {content}")
+                print()  # Blank line between messages
                 
     except Exception as e:
         print(f"    Error: {e}")

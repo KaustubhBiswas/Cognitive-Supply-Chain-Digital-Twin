@@ -374,7 +374,7 @@ def demo_cognition_module():
     console.print("\n[cyan]Creating alert and running cognitive workflow...[/cyan]")
     
     alert = Alert(
-        alert_type=AlertType.CAPACITY_CONSTRAINT,
+        alert_type=AlertType.FORECAST_DEVIATION,
         severity=AlertSeverity.UNASSESSED,  # Severity determined dynamically by cognition
         affected_nodes=[5, 6],
         details={"current": 180, "previous": 80}  # 2.25x spike for proper analysis
@@ -417,6 +417,42 @@ def demo_cognition_module():
         result_table.add_row("Negotiation", "✓ Completed")
     
     console.print(result_table)
+    
+    # Show recommendations
+    recommendations = result.get("recommendations", [])
+    if recommendations:
+        console.print(f"\n[cyan]Recommendations ({len(recommendations)} total):[/cyan]")
+        rec_table = Table(title="Recommendations", box=box.ROUNDED)
+        rec_table.add_column("#", style="dim", width=3)
+        rec_table.add_column("Type", style="yellow", width=20)
+        rec_table.add_column("Target Nodes", style="cyan", width=15)
+        rec_table.add_column("Reasoning", style="white")
+        
+        for i, rec in enumerate(recommendations, 1):  # Show all recommendations
+            rec_type = rec.get("recommendation_type", "unknown")
+            targets = str(rec.get("target_nodes", []))
+            reasoning = rec.get("reasoning", "")
+            rec_table.add_row(str(i), rec_type, targets, reasoning)
+        
+        console.print(rec_table)
+    
+    # Show agent messages
+    messages = result.get("messages", [])
+    if messages:
+        console.print(f"\n[cyan]Agent Messages ({len(messages)} total):[/cyan]")
+        msg_table = Table(title="Agent Messages", box=box.ROUNDED)
+        msg_table.add_column("#", style="dim", width=3)
+        msg_table.add_column("Message", style="white")
+        
+        for i, msg in enumerate(messages, 1):  # Show all messages
+            if hasattr(msg, "content"):
+                content = msg.content
+            else:
+                content = str(msg)
+            msg_table.add_row(str(i), content)
+        
+        console.print(msg_table)
+    
     console.print("\n[green]✓ Cognition module working correctly![/green]\n")
 
 def show_project_summary():
