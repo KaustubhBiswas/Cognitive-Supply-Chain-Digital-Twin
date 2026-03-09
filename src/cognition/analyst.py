@@ -292,6 +292,57 @@ def _gather_analysis_data(state: SupplyChainState) -> Dict[str, Any]:
     except Exception as e:
         logger.debug(f"Proactive alert generation failed: {e}")
 
+    # RAG: Retrieve relevant knowledge context
+    try:
+        from .tools import (get_disruption_context, is_rag_available,
+                            search_supply_chain_knowledge)
+        
+        if is_rag_available():
+            alert = state.get("current_alert")
+            if alert:
+                # Build query from alert context
+                alert_type = alert.get("alert_type", alert.get("type", "disruption"))
+                if hasattr(alert_type, "value"):
+                    alert_type = alert_type.value
+                severity = alert.get("severity", "medium")
+                affected_nodes = alert.get("affected_nodes", [])
+                
+                # Search for relevant knowledge
+                query = f"{severity} {alert_type} disruption affecting supply chain nodes"
+                rag_result = search_supply_chain_knowledge.invoke({
+                    "query": query,
+                    "n_results": 5,
+                    "include_best_practices": True,
+                    "include_case_studies": True,
+                    "include_recent_news": False,  # Focus on actionable knowledge
+                })
+                
+                if isinstance(rag_result, dict) and rag_result.get("success"):
+                    data["rag_context"] = {
+                        "query": query,
+                        "context": rag_result.get("context", ""),
+                        "query_intent": rag_result.get("query_analysis", {}).get("intent"),
+                        "results_count": rag_result.get("total_found", 0),
+                    }
+                
+                # Get specific disruption context
+                disruption_context = get_disruption_context.invoke({
+                    "disruption_type": alert_type,
+                    "severity": severity,
+                    "include_mitigation": True,
+                })
+                
+                if isinstance(disruption_context, dict) and disruption_context.get("success"):
+                    data["disruption_knowledge"] = {
+                        "mitigation_strategies": disruption_context.get("mitigation_strategies", []),
+                        "similar_cases": disruption_context.get("similar_cases", []),
+                        "disruption_info": disruption_context.get("disruption_info", []),
+                    }
+    except ImportError:
+        logger.debug("RAG tools not available")
+    except Exception as e:
+        logger.debug(f"RAG context retrieval failed: {e}")
+
     return data
 
 

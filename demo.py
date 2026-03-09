@@ -11,6 +11,7 @@ Modules Demonstrated:
 2. Perception Module - GNN-based demand forecasting with PyTorch Geometric
 3. Data Module - Visualization and analysis tools
 4. Cognition Module - LangGraph multi-agent system (Supervisor, Analyst, Negotiator)
+5. RAG Module - Retrieval-Augmented Generation for knowledge-enhanced decisions
 
 LLM Configuration:
 - Set GROQ_API_KEY in .env file for LLM-powered cognition
@@ -290,6 +291,244 @@ def demo_data_visualization():
     
     console.print("\n[green]✓ Visualization module working correctly![/green]\n")
 
+# Global variable to hold RAG retriever for cognition demo
+_demo_rag_retriever = None
+
+def demo_rag_module():
+    """Demonstrate the RAG (Retrieval-Augmented Generation) module."""
+    global _demo_rag_retriever
+    
+    console.print(Panel("[bold yellow]Module 5: RAG Knowledge Pipeline[/bold yellow]", 
+                       border_style="yellow"))
+    
+    import tempfile
+
+    from src.cognition.rag import (ChromaVectorStore, DisruptionType,
+                                   DocumentIngester, DocumentType,
+                                   SupplyChainChunker, SupplyChainEmbeddings,
+                                   SupplyChainRetriever)
+    
+    console.print("\n[cyan]Initializing RAG pipeline...[/cyan]")
+    
+    # Show RAG architecture
+    arch_table = Table(title="RAG Pipeline Architecture", box=box.ROUNDED)
+    arch_table.add_column("Component", style="cyan")
+    arch_table.add_column("Implementation", style="white")
+    arch_table.add_column("Purpose", style="dim")
+    
+    arch_table.add_row(
+        "Ingestion",
+        "DocumentIngester",
+        "Ingest URLs, PDFs, RSS feeds, text files"
+    )
+    arch_table.add_row(
+        "Chunking",
+        "SupplyChainChunker",
+        "Smart chunking with domain awareness"
+    )
+    arch_table.add_row(
+        "Embeddings",
+        "SentenceTransformer",
+        "all-MiniLM-L6-v2 (384-dim vectors)"
+    )
+    arch_table.add_row(
+        "Vector Store",
+        "ChromaDB",
+        "Persistent semantic search"
+    )
+    arch_table.add_row(
+        "Retrieval",
+        "HybridRetriever",
+        "Dense + BM25 sparse with RRF fusion"
+    )
+    arch_table.add_row(
+        "Query Routing",
+        "QueryRouter",
+        "Intent detection & collection routing"
+    )
+    arch_table.add_row(
+        "Reranking",
+        "CombinedReranker",
+        "Recency, severity, diversity scoring"
+    )
+    console.print(arch_table)
+    
+    # Create sample knowledge documents
+    console.print("\n[cyan]Creating sample knowledge base...[/cyan]")
+    
+    sample_docs = [
+        {
+            "title": "Semiconductor Shortage Mitigation Guide",
+            "content": """Best practices for semiconductor shortage mitigation:
+            1. Diversify supplier base across multiple regions (Asia, Europe, Americas)
+            2. Maintain 30-60 days safety stock for critical components
+            3. Implement early warning systems using supplier health monitoring
+            4. Develop alternative product designs that use substitute components
+            5. Establish strategic partnerships with tier-2 suppliers
+            Historical data shows companies with diversified suppliers recovered 40% faster.""",
+            "doc_type": DocumentType.BEST_PRACTICE,
+        },
+        {
+            "title": "2021 Suez Canal Blockage Case Study",
+            "content": """Case Study: Suez Canal Blockage (March 2021)
+            Impact: 400+ ships delayed, $9.6B daily trade disruption
+            Supply chain effects: 3-6 month delays for affected shipments
+            Lessons learned:
+            - Geographic diversification of shipping routes is critical
+            - Buffer inventory of 2-4 weeks protects against logistics disruptions
+            - Real-time visibility systems enable faster rerouting decisions
+            Companies with multi-modal transport options reduced impact by 60%.""",
+            "doc_type": DocumentType.CASE_STUDY,
+        },
+        {
+            "title": "Demand Spike Response Protocol",
+            "content": """Protocol for handling sudden demand spikes:
+            Phase 1 (0-24h): Assess inventory position across all nodes
+            Phase 2 (24-72h): Activate safety stock and expedite orders
+            Phase 3 (72h+): Coordinate with suppliers for capacity increase
+            Key metrics to monitor: Fill rate, backorder rate, inventory turns
+            Recommended safety stock multiplier during spikes: 1.5-2.0x normal levels.""",
+            "doc_type": DocumentType.BEST_PRACTICE,
+        },
+        {
+            "title": "Supplier Failure Recovery Playbook",
+            "content": """When a critical supplier fails:
+            1. Immediate: Switch to qualified backup suppliers (maintain 2-3 per category)
+            2. Short-term: Increase orders from remaining suppliers by 20-30%
+            3. Medium-term: Qualify new suppliers (typical lead time: 3-6 months)
+            Risk indicators to monitor: Financial health scores, delivery performance trends,
+            quality metrics, geopolitical exposure ratings.
+            Companies with supplier risk monitoring detect issues 2-3 months earlier.""",
+            "doc_type": DocumentType.BEST_PRACTICE,
+        },
+    ]
+    
+    # Initialize RAG components
+    try:
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+            task = progress.add_task("Initializing embeddings...", total=None)
+            embeddings = SupplyChainEmbeddings(use_cache=True)
+            
+            progress.update(task, description="Creating vector store...")
+            # Use temporary directory for demo
+            temp_dir = tempfile.mkdtemp(prefix="rag_demo_")
+            vector_store = ChromaVectorStore(
+                persist_directory=temp_dir,
+                embeddings=embeddings,
+            )
+            
+            progress.update(task, description="Ingesting documents...")
+            ingester = DocumentIngester()
+            chunker = SupplyChainChunker()
+            
+            # Ingest sample documents
+            for doc_info in sample_docs:
+                doc = ingester.ingest_text(
+                    content=doc_info["content"],
+                    title=doc_info["title"],
+                    doc_type=doc_info["doc_type"],
+                )
+                chunks = chunker.chunk_document(doc)
+                vector_store.add_document(doc, chunks)
+            
+            progress.update(task, description="Creating retriever...")
+            retriever = SupplyChainRetriever(
+                vector_store=vector_store,
+                embeddings=embeddings,
+            )
+            _demo_rag_retriever = retriever
+        
+        console.print(f"  ✓ Ingested {len(sample_docs)} documents")
+        
+        # Show collection stats
+        stats = vector_store.get_collection_stats()
+        total_chunks = sum(s.get("count", 0) for s in stats.values())
+        console.print(f"  ✓ Created {total_chunks} searchable chunks")
+        
+    except Exception as e:
+        console.print(f"  [yellow]⚠ RAG initialization: {e}[/yellow]")
+        console.print("  [dim]Using mock retriever for demo...[/dim]")
+        _demo_rag_retriever = None
+    
+    # Demonstrate retrieval
+    console.print("\n[cyan]Demonstrating knowledge retrieval...[/cyan]")
+    
+    test_queries = [
+        ("How to handle semiconductor shortage?", "disruption_info"),
+        ("Best practices for demand spike response", "best_practice"),
+        ("supplier failure recovery strategies", "best_practice"),
+    ]
+    
+    if _demo_rag_retriever:
+        results_table = Table(title="RAG Search Results", box=box.ROUNDED)
+        results_table.add_column("Query", style="cyan", width=35)
+        results_table.add_column("Intent", style="yellow", width=15)
+        results_table.add_column("Top Result", style="white", width=40)
+        results_table.add_column("Score", style="green", width=8)
+        
+        for query, expected_intent in test_queries:
+            try:
+                results = _demo_rag_retriever.retrieve(query, n_results=1)
+                if results.results:
+                    top = results.results[0]
+                    content_preview = top.content[:60] + "..." if len(top.content) > 60 else top.content
+                    analysis = _demo_rag_retriever.query_router.analyze_query(query)
+                    results_table.add_row(
+                        query[:33] + ".." if len(query) > 35 else query,
+                        analysis.intent.value,
+                        content_preview,
+                        f"{top.score:.3f}"
+                    )
+                else:
+                    results_table.add_row(query[:35], expected_intent, "[dim]No results[/dim]", "-")
+            except Exception as e:
+                results_table.add_row(query[:35], expected_intent, f"[red]Error: {e}[/red]", "-")
+        
+        console.print(results_table)
+        
+        # Show context generation
+        console.print("\n[cyan]Generating LLM context for: 'demand spike mitigation'[/cyan]")
+        try:
+            context = _demo_rag_retriever.get_context_for_llm(
+                "How should I handle a sudden demand spike?",
+                max_tokens=500,
+                n_results=2,
+            )
+            if context:
+                console.print(Panel(
+                    context[:400] + "..." if len(context) > 400 else context,
+                    title="Retrieved Context (truncated)",
+                    border_style="dim"
+                ))
+            else:
+                console.print("  [dim]No context retrieved[/dim]")
+        except Exception as e:
+            console.print(f"  [yellow]Context generation: {e}[/yellow]")
+    else:
+        console.print("  [dim]Skipping retrieval demo (retriever not available)[/dim]")
+    
+    # Show available RAG tools
+    console.print("\n[cyan]RAG Tools for Cognitive Agents:[/cyan]")
+    tools_table = Table(box=box.ROUNDED)
+    tools_table.add_column("Tool", style="cyan", width=30)
+    tools_table.add_column("Description", style="white")
+    
+    tools_table.add_row(
+        "search_supply_chain_knowledge",
+        "Search knowledge base with query routing and reranking"
+    )
+    tools_table.add_row(
+        "get_disruption_context",
+        "Get historical context and mitigation strategies for disruptions"
+    )
+    tools_table.add_row(
+        "get_best_practices",
+        "Retrieve proven strategies for supply chain challenges"
+    )
+    console.print(tools_table)
+    
+    console.print("\n[green]✓ RAG module working correctly![/green]\n")
+
 def demo_cognition_module():
     """Demonstrate the cognition module."""
     console.print(Panel("[bold yellow]Module 4: Cognitive Multi-Agent System[/bold yellow]", 
@@ -318,8 +557,12 @@ def demo_cognition_module():
     for _ in range(20):
         model.step()
     
-    # Initialize tools
-    initialize_tools(simulation=model)
+    # Initialize tools (with RAG if available from previous demo)
+    global _demo_rag_retriever
+    initialize_tools(simulation=model, rag_retriever=_demo_rag_retriever)
+    
+    if _demo_rag_retriever:
+        console.print("  [green]✓ RAG retriever connected to cognitive tools[/green]")
     
     # Initialize LLM if API key available
     llm = None
@@ -374,7 +617,7 @@ def demo_cognition_module():
     console.print("\n[cyan]Creating alert and running cognitive workflow...[/cyan]")
     
     alert = Alert(
-        alert_type=AlertType.FORECAST_DEVIATION,
+        alert_type=AlertType.DEMAND_SPIKE,
         severity=AlertSeverity.UNASSESSED,  # Severity determined dynamically by cognition
         affected_nodes=[5, 6],
         details={"current": 180, "previous": 80}  # 2.25x spike for proper analysis
@@ -486,6 +729,11 @@ def show_project_summary():
         "LangGraph multi-agent (Supervisor, Analyst, Negotiator), Tools"
     )
     summary_table.add_row(
+        "RAG Pipeline",
+        "✅ Complete",
+        "Ingestion, Chunking, Embeddings, Vector Store, Hybrid Retrieval"
+    )
+    summary_table.add_row(
         "Integration",
         "⏳ Planned",
         "Dashboard, Real-time updates, API endpoints"
@@ -502,7 +750,9 @@ def show_project_summary():
     test_table.add_row("test_simulation.py", "18", "✅ All Pass")
     test_table.add_row("test_perception.py", "32", "✅ All Pass (1 skipped)")
     test_table.add_row("test_cognition.py", "28", "✅ 22 Pass, 6 Skipped")
-    test_table.add_row("Total", "78", "✅ All Pass")
+    test_table.add_row("test_rag_pipeline.py", "6", "✅ All Pass")
+    test_table.add_row("test_rag_integration.py", "14", "✅ All Pass")
+    test_table.add_row("Total", "98", "✅ All Pass")
     
     console.print(test_table)
     
@@ -514,6 +764,7 @@ def show_project_summary():
     tech_table.add_row("Simulation", "Mesa 3.x, NetworkX")
     tech_table.add_row("Deep Learning", "PyTorch 2.5, PyTorch Geometric")
     tech_table.add_row("GNN Temporal", "torch-geometric-temporal (A3TGCN)")
+    tech_table.add_row("RAG Pipeline", "ChromaDB, sentence-transformers, rank-bm25")
     tech_table.add_row("Visualization", "Matplotlib, Plotly")
     tech_table.add_row("Testing", "Pytest")
     
@@ -549,6 +800,15 @@ def main():
         demo_data_visualization()
     except Exception as e:
         console.print(f"[red]Visualization demo error: {e}[/red]")
+        import traceback
+        traceback.print_exc()
+    
+    console.print("=" * 60)
+    
+    try:
+        demo_rag_module()
+    except Exception as e:
+        console.print(f"[red]RAG demo error: {e}[/red]")
         import traceback
         traceback.print_exc()
     

@@ -24,6 +24,7 @@ import numpy as np
 if TYPE_CHECKING:
     from ..perception.predictor import SupplyChainPredictor
     from ..simulation.model import SupplyChainModel
+    from .rag import SupplyChainRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +36,17 @@ logger = logging.getLogger(__name__)
 _simulation: Optional["SupplyChainModel"] = None
 _forecaster: Optional["SupplyChainPredictor"] = None
 _node_features: Optional[np.ndarray] = None  # For GNN context
+_rag_retriever: Optional["SupplyChainRetriever"] = None  # For RAG knowledge retrieval
 
 
 def initialize_tools(
     simulation: "SupplyChainModel",
     forecaster: Optional["SupplyChainPredictor"] = None,
     node_features: Optional[np.ndarray] = None,
+    rag_retriever: Optional["SupplyChainRetriever"] = None,
 ) -> None:
     """
-    Initialize tool references to simulation and forecaster.
+    Initialize tool references to simulation, forecaster, and RAG retriever.
     
     Must be called before using any tools.
     
@@ -51,12 +54,20 @@ def initialize_tools(
         simulation: The active SupplyChainModel instance
         forecaster: Optional GNN predictor for demand forecasting
         node_features: Optional node feature array for context
+        rag_retriever: Optional RAG retriever for knowledge search
     """
-    global _simulation, _forecaster, _node_features
+    global _simulation, _forecaster, _node_features, _rag_retriever
     _simulation = simulation
     _forecaster = forecaster
     _node_features = node_features
-    logger.info("Cognition tools initialized")
+    _rag_retriever = rag_retriever
+    
+    components = ["simulation"]
+    if forecaster:
+        components.append("forecaster")
+    if rag_retriever:
+        components.append("RAG retriever")
+    logger.info(f"Cognition tools initialized with: {', '.join(components)}")
 
 
 def is_initialized() -> bool:
@@ -1571,6 +1582,337 @@ def _get_agent(node_id: int):
     return None
 
 
+# =============================================================================
+# RAG (Retrieval-Augmented Generation) Tools
+# =============================================================================
+
+@tool
+def search_supply_chain_knowledge(
+    query: str,
+    n_results: int = 5,
+    include_best_practices: bool = True,
+    include_case_studies: bool = True,
+    include_recent_news: bool = True,
+) -> Dict[str, Any]:
+    """
+    Search the RAG knowledge base for supply chain information.
+    
+    Use this tool to retrieve relevant context about:
+    - Historical disruptions and their resolutions
+    - Best practices for handling specific situations
+    - Case studies from similar scenarios
+    - Recent industry news and trends
+    
+    The retrieved context can inform analysis and recommendations.
+    
+    Args:
+        query: Natural language query describing what information is needed
+        n_results: Maximum number of results to return (default: 5)
+        include_best_practices: Include best practice documents
+        include_case_studies: Include case study documents
+        include_recent_news: Include recent news articles
+        
+    Returns:
+        Dictionary with search results:
+        - results: List of relevant documents with content and metadata
+        - context: Formatted context string ready for LLM consumption
+        - query_analysis: Analysis of query intent and routing
+        - success: Whether search was successful
+    """
+    global _rag_retriever
+    
+    if _rag_retriever is None:
+        return {
+            "success": False,
+            "error": "RAG retriever not initialized",
+            "results": [],
+            "context": "",
+        }
+    
+    try:
+        # Determine which collections to search based on flags
+        from .rag import CollectionType
+        
+        collections = []
+        if include_best_practices:
+            collections.append(CollectionType.BEST_PRACTICES)
+        if include_case_studies:
+            collections.append(CollectionType.CASE_STUDIES)
+        if include_recent_news:
+            collections.extend([CollectionType.NEWS, CollectionType.DISRUPTIONS])
+        
+        # Use query routing if no specific collections requested
+        if not collections:
+            collections = None  # Let router decide
+        
+        # Perform retrieval
+        results = _rag_retriever.retrieve(
+            query=query,
+            n_results=n_results,
+            collections=collections,
+        )
+        
+        # Get formatted context for LLM
+        context = _rag_retriever.get_context_for_llm(
+            query=query,
+            max_tokens=2000,
+            n_results=n_results,
+        )
+        
+        # Get query analysis
+        query_analysis = _rag_retriever.query_router.analyze_query(query)
+        
+        # Format results
+        formatted_results = []
+        for r in results.results:
+            formatted_results.append({
+                "content": r.content[:500] + "..." if len(r.content) > 500 else r.content,
+                "score": round(r.score, 4),
+                "doc_id": r.doc_id,
+                "collection": r.collection,
+                "metadata": {
+                    k: v for k, v in r.metadata.items()
+                    if k in ["doc_type", "severity", "disruption_type", "region", "timestamp"]
+                },
+            })
+        
+        return {
+            "success": True,
+            "results": formatted_results,
+            "total_found": len(results),
+            "context": context,
+            "query_analysis": {
+                "intent": query_analysis.intent.value,
+                "confidence": round(query_analysis.confidence, 2),
+                "detected_disruption_type": (
+                    query_analysis.detected_disruption_type.value
+                    if query_analysis.detected_disruption_type else None
+                ),
+                "detected_region": (
+                    query_analysis.detected_region.value
+                    if query_analysis.detected_region else None
+                ),
+                "is_urgent": query_analysis.is_urgent,
+            },
+            "search_time_ms": round(results.search_time_ms, 2),
+        }
+        
+    except Exception as e:
+        logger.error(f"RAG search failed: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "results": [],
+            "context": "",
+        }
+
+
+@tool
+def get_disruption_context(
+    disruption_type: str,
+    severity: str = "high",
+    include_mitigation: bool = True,
+) -> Dict[str, Any]:
+    """
+    Get contextual knowledge about a specific type of supply chain disruption.
+    
+    Use this when analyzing a disruption to get:
+    - Historical information about similar disruptions
+    - Best practices for mitigation
+    - Case studies with lessons learned
+    
+    Args:
+        disruption_type: Type of disruption (stockout, demand_spike, supplier_failure, 
+                        logistics_delay, quality_issue, etc.)
+        severity: Severity level (low, medium, high, critical)
+        include_mitigation: Whether to include mitigation strategies
+        
+    Returns:
+        Dictionary with contextual information:
+        - disruption_info: Historical context about this disruption type
+        - mitigation_strategies: Relevant best practices (if requested)
+        - similar_cases: Case studies of similar situations
+        - success: Whether retrieval was successful
+    """
+    global _rag_retriever
+    
+    if _rag_retriever is None:
+        return {
+            "success": False,
+            "error": "RAG retriever not initialized",
+            "disruption_info": "",
+            "mitigation_strategies": [],
+            "similar_cases": [],
+        }
+    
+    try:
+        from .rag import DisruptionType
+
+        # Map string to enum
+        dtype_map = {
+            "stockout": DisruptionType.STOCKOUT,
+            "demand_spike": DisruptionType.DEMAND_SPIKE,
+            "supplier_failure": DisruptionType.SUPPLIER_FAILURE,
+            "logistics_delay": DisruptionType.LOGISTICS_DELAY,
+            "quality_issue": DisruptionType.QUALITY_ISSUE,
+            "natural_disaster": DisruptionType.NATURAL_DISASTER,
+            "geopolitical": DisruptionType.GEOPOLITICAL,
+            "cyber_attack": DisruptionType.CYBER_ATTACK,
+            "labor_shortage": DisruptionType.LABOR_SHORTAGE,
+            "raw_material_shortage": DisruptionType.RAW_MATERIAL_SHORTAGE,
+        }
+        
+        dtype = dtype_map.get(disruption_type.lower(), DisruptionType.GENERAL)
+        
+        # Search for disruption information
+        results = _rag_retriever.retrieve_for_disruption(
+            disruption_description=f"{severity} {disruption_type} disruption",
+            disruption_type=dtype,
+            include_best_practices=include_mitigation,
+            include_case_studies=True,
+            n_results=8,
+        )
+        
+        # Categorize results
+        disruption_info = []
+        mitigation_strategies = []
+        similar_cases = []
+        
+        for r in results.results:
+            doc_type = r.metadata.get("doc_type", "")
+            content_summary = r.content[:300] + "..." if len(r.content) > 300 else r.content
+            
+            if doc_type == "best_practice":
+                mitigation_strategies.append({
+                    "strategy": content_summary,
+                    "relevance": round(r.score, 3),
+                })
+            elif doc_type == "case_study":
+                similar_cases.append({
+                    "case": content_summary,
+                    "relevance": round(r.score, 3),
+                })
+            else:
+                disruption_info.append({
+                    "info": content_summary,
+                    "source": doc_type,
+                    "relevance": round(r.score, 3),
+                })
+        
+        return {
+            "success": True,
+            "disruption_type": disruption_type,
+            "severity": severity,
+            "disruption_info": disruption_info[:3],
+            "mitigation_strategies": mitigation_strategies[:3],
+            "similar_cases": similar_cases[:2],
+            "total_sources": len(results),
+        }
+        
+    except Exception as e:
+        logger.error(f"Disruption context retrieval failed: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "disruption_info": "",
+            "mitigation_strategies": [],
+            "similar_cases": [],
+        }
+
+
+@tool
+def get_best_practices(
+    topic: str,
+    industry: Optional[str] = None,
+    max_results: int = 3,
+) -> Dict[str, Any]:
+    """
+    Retrieve best practices for a specific supply chain topic.
+    
+    Use this to get expert recommendations and proven strategies
+    for handling various supply chain challenges.
+    
+    Args:
+        topic: Topic to find best practices for (e.g., "inventory management",
+               "supplier diversification", "demand forecasting")
+        industry: Optional industry filter (e.g., "manufacturing", "retail")
+        max_results: Maximum number of best practices to return
+        
+    Returns:
+        Dictionary with best practices:
+        - practices: List of relevant best practices
+        - topic_analyzed: The topic that was searched
+        - success: Whether retrieval was successful
+    """
+    global _rag_retriever
+    
+    if _rag_retriever is None:
+        return {
+            "success": False,
+            "error": "RAG retriever not initialized",
+            "practices": [],
+        }
+    
+    try:
+        results = _rag_retriever.retrieve_best_practices(
+            topic=topic,
+            industry=industry,
+            n_results=max_results,
+        )
+        
+        practices = []
+        for r in results.results:
+            practices.append({
+                "practice": r.content,
+                "relevance": round(r.score, 3),
+                "industry": r.metadata.get("industry", "general"),
+                "source_type": r.metadata.get("doc_type", "best_practice"),
+            })
+        
+        return {
+            "success": True,
+            "topic_analyzed": topic,
+            "industry_filter": industry,
+            "practices": practices,
+            "total_found": len(results),
+        }
+        
+    except Exception as e:
+        logger.error(f"Best practices retrieval failed: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "practices": [],
+        }
+
+
+def is_rag_available() -> bool:
+    """Check if RAG retriever is initialized and available."""
+    return _rag_retriever is not None
+
+
+def get_rag_stats() -> Dict[str, Any]:
+    """Get statistics about the RAG knowledge base."""
+    global _rag_retriever
+    
+    if _rag_retriever is None:
+        return {"available": False}
+    
+    try:
+        stats = _rag_retriever.vector_store.get_collection_stats()
+        total_chunks = sum(s.get("count", 0) for s in stats.values())
+        
+        return {
+            "available": True,
+            "total_chunks": total_chunks,
+            "collections": {
+                k: v.get("count", 0) for k, v in stats.items()
+            },
+        }
+    except Exception as e:
+        return {"available": True, "error": str(e)}
+
+
 def get_all_tools() -> List:
     """
     Get list of all available tools for the cognitive agents.
@@ -1578,7 +1920,7 @@ def get_all_tools() -> List:
     Returns:
         List of tool functions decorated with @tool
     """
-    return [
+    tools = [
         forecast_demand,
         get_node_inventory,
         get_all_inventories,
@@ -1597,6 +1939,16 @@ def get_all_tools() -> List:
         generate_proactive_alerts,
         simulate_disruption_ripple,
     ]
+    
+    # Add RAG tools if retriever is available
+    if is_rag_available():
+        tools.extend([
+            search_supply_chain_knowledge,
+            get_disruption_context,
+            get_best_practices,
+        ])
+    
+    return tools
 
 
 def get_tool_descriptions() -> Dict[str, str]:

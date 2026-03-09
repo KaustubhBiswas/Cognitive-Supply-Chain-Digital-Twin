@@ -54,6 +54,22 @@ dev = [
     "mypy>=1.5.0",
 ]
 
+rag = [
+    # Embeddings
+    "sentence-transformers>=2.2.0",
+    # Vector Store
+    "chromadb>=0.4.0",
+    # Document Ingestion
+    "beautifulsoup4>=4.12.0",
+    "feedparser>=6.0.0",
+    "pypdf>=3.0.0",
+    "requests>=2.31.0",
+    # Hybrid Retrieval
+    "rank-bm25>=0.2.2",
+    # Scheduled Ingestion
+    "apscheduler>=3.10.0",
+]
+
 [project.scripts]
 run-simulation = "src.integration.dashboard:main"
 train-gnn = "src.perception.trainer:main"
