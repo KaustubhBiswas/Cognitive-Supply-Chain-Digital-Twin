@@ -207,7 +207,6 @@ class TestA3TGCNForecaster:
         assert output.shape == (num_nodes, 1)
         assert hidden.shape == (num_nodes, 32)  # hidden_dim
     
-    @pytest.mark.skip(reason="A3TGCN has known batched input compatibility issues with torch-geometric-temporal")
     def test_batched_forward(self, model):
         """Test batched forward pass."""
         batch_size = 4

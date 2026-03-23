@@ -75,6 +75,38 @@ def is_initialized() -> bool:
     return _simulation is not None
 
 
+def _iter_agents():
+    """Iterate over simulation agents across Mesa 2.x/3.x APIs."""
+    global _simulation
+
+    if _simulation is None:
+        return []
+
+    if hasattr(_simulation, "agents"):
+        return _simulation.agents
+
+    if hasattr(_simulation, "schedule") and hasattr(_simulation.schedule, "agents"):
+        return _simulation.schedule.agents
+
+    return []
+
+
+def _get_current_step() -> int:
+    """Get current simulation step across Mesa 2.x/3.x APIs."""
+    global _simulation
+
+    if _simulation is None:
+        return 0
+
+    if hasattr(_simulation, "current_step"):
+        return int(getattr(_simulation, "current_step", 0))
+
+    if hasattr(_simulation, "schedule") and hasattr(_simulation.schedule, "time"):
+        return int(getattr(_simulation.schedule, "time", 0))
+
+    return 0
+
+
 # =============================================================================
 # Forecasting Tools
 # =============================================================================
@@ -227,7 +259,7 @@ def get_all_inventories() -> Dict[str, Any]:
     low_nodes = []
     excess_nodes = []
     
-    for agent in _simulation.schedule.agents:
+    for agent in _iter_agents():
         node_id = agent.unique_id
         inventory = float(agent.inventory)
         inventories[node_id] = inventory
@@ -320,12 +352,12 @@ def get_supply_chain_metrics() -> Dict[str, Any]:
         return {"error": "Simulation not initialized", "success": False}
     
     # Calculate metrics
-    total_inv = sum(agent.inventory for agent in _simulation.schedule.agents)
+    total_inv = sum(agent.inventory for agent in _iter_agents())
     bullwhip = _compute_bullwhip_ratio()
     stockouts = []
     fill_rates = []
     
-    for agent in _simulation.schedule.agents:
+    for agent in _iter_agents():
         if agent.inventory <= 0:
             stockouts.append(agent.unique_id)
         
@@ -349,7 +381,7 @@ def get_supply_chain_metrics() -> Dict[str, Any]:
         "stockout_nodes": stockouts,
         "num_stockouts": len(stockouts),
         "health_score": float(health_score),
-        "current_step": _simulation.schedule.time,
+        "current_step": _get_current_step(),
         "success": True,
     }
 
@@ -410,7 +442,7 @@ def _compute_bullwhip_ratio() -> float:
     order_variances = []
     demand_variances = []
     
-    for agent in _simulation.schedule.agents:
+    for agent in _iter_agents():
         orders = getattr(agent, 'orders_placed', [])
         demands = getattr(agent, 'demand_history', [])
         
@@ -470,7 +502,7 @@ def propose_order_adjustment(
         "change_percentage": float(change_pct),
         "reason": reason,
         "requires_approval": change_pct > 20,  # Large changes need approval
-        "proposal_id": f"order_adj_{node_id}_{_simulation.schedule.time if _simulation else 0}",
+        "proposal_id": f"order_adj_{node_id}_{_get_current_step()}",
         "success": True,
     }
 
@@ -520,7 +552,7 @@ def propose_policy_change(
         "change_percentage": float(change_pct),
         "reason": reason,
         "requires_approval": True,  # Policy changes always need approval
-        "proposal_id": f"policy_{node_id}_{parameter}_{_simulation.schedule.time if _simulation else 0}",
+        "proposal_id": f"policy_{node_id}_{parameter}_{_get_current_step()}",
         "success": True,
     }
 
@@ -1567,17 +1599,9 @@ def _get_agent(node_id: int):
     if hasattr(_simulation, '_agents_by_id'):
         return _simulation._agents_by_id.get(node_id)
     
-    # Try schedule.agents (Mesa 2.x style)
-    if hasattr(_simulation, 'schedule') and hasattr(_simulation.schedule, 'agents'):
-        for agent in _simulation.schedule.agents:
-            if agent.unique_id == node_id:
-                return agent
-    
-    # Try self.agents (Mesa 3.x style)
-    if hasattr(_simulation, 'agents'):
-        for agent in _simulation.agents:
-            if agent.unique_id == node_id:
-                return agent
+    for agent in _iter_agents():
+        if agent.unique_id == node_id:
+            return agent
     
     return None
 

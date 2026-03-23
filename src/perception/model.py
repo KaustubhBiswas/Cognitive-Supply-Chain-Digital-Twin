@@ -151,6 +151,22 @@ class A3TGCNForecaster(nn.Module):
             predictions: (num_nodes, output_dim)
             hidden_state: Updated hidden state
         """
+        # Batched flattened input: (batch_size, num_nodes, input_window * num_features)
+        # A3TGCN does not natively handle this shape, so run per sample and stack.
+        if x.dim() == 3 and x.size(-1) == self.input_window * self.input_features and x.size(1) != self.input_window:
+            outputs = []
+            hidden_states = []
+            for sample in x:
+                sample_out, sample_h = self.forward(
+                    sample,
+                    edge_index,
+                    edge_weight=edge_weight,
+                    h=None,
+                )
+                outputs.append(sample_out)
+                hidden_states.append(sample_h)
+            return torch.stack(outputs, dim=0), torch.stack(hidden_states, dim=0)
+
         # Reshape input to A3TGCN expected format: (num_nodes, num_features, periods)
         if x.dim() == 2:
             # Flattened: (num_nodes, input_window * num_features)

@@ -31,7 +31,10 @@ from .graph import FallbackGraph, create_supply_chain_graph
 from .llm import (DEFAULT_GROQ_MODEL, DEFAULT_OLLAMA_MODEL, GROQ_MODELS,
                   OLLAMA_MODELS, LLMConfig, create_groq_llm, create_llm,
                   create_ollama_llm)
+from .monitor import PreemptiveMonitor
 from .negotiator import create_negotiator_agent
+from .risk_engine import (NodeHealthState, OptimizationOpportunity, RiskEngine,
+                          RiskState)
 from .state import (  # Enums; Dataclasses; State; Helper functions; Constants
     ALERT_THRESHOLDS, DECISION_THRESHOLDS, AgentRoute, Alert, AlertSeverity,
     AlertType, ForecastData, Recommendation, RecommendationType,
@@ -102,4 +105,11 @@ __all__ = [
     "OLLAMA_MODELS",
     "DEFAULT_GROQ_MODEL",
     "DEFAULT_OLLAMA_MODEL",
+    # Risk Engine (Preemptive)
+    "RiskEngine",
+    "RiskState",
+    "NodeHealthState",
+    "OptimizationOpportunity",
+    # Monitor (Preemptive)
+    "PreemptiveMonitor",
 ]

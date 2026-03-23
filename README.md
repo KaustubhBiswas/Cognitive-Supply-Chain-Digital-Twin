@@ -28,6 +28,12 @@ python -m venv .venv
 # Install dependencies
 pip install -e ".[dev]"
 
+# Optional features
+# RAG pipeline dependencies
+pip install -e ".[rag]"
+# Dataset loader dependencies (Kaggle API)
+pip install -e ".[data]"
+
 # Set up environment variables
 copy .env.example .env
 # Edit .env and add your GROQ_API_KEY
@@ -46,7 +52,7 @@ python scripts/download_dataset.py
 
 ```bash
 # Run the simulation dashboard
-streamlit run src/integration/dashboard.py
+streamlit run app.py
 
 # Train the GNN model
 python -m src.perception.trainer

@@ -54,6 +54,11 @@ dev = [
     "mypy>=1.5.0",
 ]
 
+data = [
+    # Kaggle-based dataset loaders
+    "kaggle>=1.6.0",
+]
+
 rag = [
     # Embeddings
     "sentence-transformers>=2.2.0",
@@ -93,4 +98,3 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-asyncio_mode = "auto"
