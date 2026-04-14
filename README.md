@@ -59,7 +59,51 @@ python -m src.perception.trainer
 
 # Run tests
 pytest tests/ -v
+
+# Run deterministic agentic benchmark harness
+python scripts/run_agentic_benchmarks.py --trials 4 --seed 42 --mode constrained_auto --autonomy-enabled
+
+# Run agentic KPI CI gate on benchmark output
+python scripts/agentic_ci_gate.py --benchmark data/benchmarks/agentic_benchmark_latest.json
 ```
+
+## 🧭 Rollout Modes (Sprint 4)
+
+The system supports staged autonomy rollout with rollback controls:
+
+- `shadow`: policy decisions are computed but never auto-executed.
+- `constrained_auto`: only low-risk policy-approved actions auto-execute.
+- `full_auto`: all policy-approved actions auto-execute.
+
+Key environment variables (see `.env.example`):
+
+- `AGENT_ROLLOUT_MODE`
+- `AGENT_AUTONOMY_ENABLED`
+- `GOV_CRITICAL_MIN_CONFIDENCE`
+- `GOV_MEDIUM_RISK_MIN_CONFIDENCE`
+- `GOV_BASELINE_MIN_CONFIDENCE`
+
+The dashboard sidebar also exposes runtime controls for mode switching and emergency rollback.
+
+## 🧪 Agentic Benchmark and Gate
+
+`scripts/run_agentic_benchmarks.py` runs a deterministic scenario suite:
+
+- normal operations
+- disruption
+- stale context
+- conflicting goals
+- injected tool-failure path
+
+It writes summary JSON to `data/benchmarks/agentic_benchmark_latest.json` by default.
+
+`scripts/agentic_ci_gate.py` enforces regression thresholds on benchmark output.
+Thresholds are configurable via environment variables:
+
+- `AGENTIC_GATE_MIN_PLAN_SUCCESS_RATE`
+- `AGENTIC_GATE_MAX_BLOCKED_STEP_RATE`
+- `AGENTIC_GATE_MIN_AUTONOMOUS_COMPLETION_RATE`
+- `AGENTIC_GATE_MIN_FAILURE_RECOVERY_RATE`
 
 ## 📁 Project Structure
 

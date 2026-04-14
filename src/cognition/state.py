@@ -199,7 +199,20 @@ class ForecastData:
 
 
 # Agent routing options
-AgentRoute = Literal["supervisor", "analyst", "negotiator", "tools", "human", "end"]
+AgentRoute = Literal["planner", "executor", "supervisor", "analyst", "negotiator", "tools", "human", "end"]
+
+
+class PlanStep(TypedDict, total=False):
+    """Single step in a decomposed execution plan."""
+    step_id: str
+    title: str
+    description: str
+    owner: Literal["supervisor", "analyst", "negotiator", "tools", "human"]
+    status: Literal["pending", "in_progress", "completed", "blocked", "skipped"]
+    required_tools: List[str]
+    success_criteria: str
+    result: str
+    error: str
 
 
 class SupplyChainState(TypedDict):
@@ -238,11 +251,29 @@ class SupplyChainState(TypedDict):
     # Preemptive fields (populated by RiskEngine/PreemptiveMonitor)
     risk_scores: Optional[Dict[int, Dict[str, Any]]]  # node_id -> RiskState dict
     preemptive_mode: bool  # True when workflow triggered by predicted risk, not actual alert
+    # Sprint 1 planning fields
+    objective: Optional[str]
+    plan_steps: List[PlanStep]
+    current_plan_step: int
+    plan_status: Literal["not_started", "in_progress", "completed", "blocked", "replanned"]
+    execution_log: List[Dict[str, Any]]
+    reflection_notes: List[str]
+    replan_count: int
+    max_replans: int
+    retrieved_memories: List[Dict[str, Any]]
+    # Full-network vulnerability assessment fields
+    scan_scope: Literal["custom_nodes", "full_network"]
+    total_nodes_scanned: int
+    vulnerable_node_ids: List[int]
+    vulnerabilities_by_node: Dict[str, List[Dict[str, Any]]]
+    coverage_rate: float
+    vulnerability_count: int
 
 
 def create_initial_state(
     alert: Optional[Alert] = None,
     simulation_snapshot: Optional[SimulationSnapshot] = None,
+    objective: Optional[str] = None,
 ) -> SupplyChainState:
     """
     Create an initial state for the cognitive workflow.
@@ -268,6 +299,21 @@ def create_initial_state(
         error=None,
         risk_scores=None,
         preemptive_mode=False,
+        objective=objective,
+        plan_steps=[],
+        current_plan_step=0,
+        plan_status="not_started",
+        execution_log=[],
+        reflection_notes=[],
+        replan_count=0,
+        max_replans=2,
+        retrieved_memories=[],
+        scan_scope="custom_nodes",
+        total_nodes_scanned=0,
+        vulnerable_node_ids=[],
+        vulnerabilities_by_node={},
+        coverage_rate=0.0,
+        vulnerability_count=0,
     )
 
 

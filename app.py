@@ -132,6 +132,38 @@ with st.sidebar:
     st.markdown(f"**Nodes:** `{n_agents}`")
     st.markdown(f"**LLM:** {llm_status}")
 
+    rollout = mgr.get_rollout_config()
+    st.markdown(f"**Rollout:** `{rollout.get('rollout_mode', 'constrained_auto')}`")
+    st.markdown(f"**Autonomy:** {'🟢 ON' if rollout.get('autonomy_enabled', True) else '🔴 OFF'}")
+
+    st.divider()
+
+    # ── Rollout Controls (Sprint 4) ──
+    st.markdown("### 🧭 Rollout")
+    mode_options = ["shadow", "constrained_auto", "full_auto"]
+    current_mode = str(rollout.get("rollout_mode", "constrained_auto"))
+    mode_index = mode_options.index(current_mode) if current_mode in mode_options else 1
+    selected_mode = st.selectbox(
+        "Mode",
+        mode_options,
+        index=mode_index,
+        format_func=lambda x: x.replace("_", " ").title(),
+    )
+    if selected_mode != current_mode:
+        mgr.set_rollout_mode(selected_mode)
+        st.rerun()
+
+    autonomy_enabled = bool(rollout.get("autonomy_enabled", True))
+    new_autonomy = st.toggle("Autonomy Enabled", value=autonomy_enabled)
+    if new_autonomy != autonomy_enabled:
+        mgr.set_autonomy_enabled(new_autonomy)
+        st.rerun()
+
+    if st.button("⏪ Emergency Rollback (Shadow)", use_container_width=True):
+        mgr.set_rollout_mode("shadow")
+        mgr.set_autonomy_enabled(False)
+        st.rerun()
+
     st.divider()
 
     # ── Simulation Controls ──
@@ -177,9 +209,97 @@ st.caption(
     f"{len(mgr.event_log)} events injected"
 )
 
+rollout = mgr.get_rollout_config()
+st.caption(
+    "Agent runtime • "
+    f"mode {str(rollout.get('rollout_mode', 'constrained_auto')).replace('_', ' ')} • "
+    f"autonomy {'on' if rollout.get('autonomy_enabled', True) else 'off'}"
+)
+
+last_impact = mgr.get_last_intervention_impact()
+if last_impact:
+    impact_time = str(last_impact.get("timestamp", "")).replace("T", " ")[:19]
+    d_inv = float(last_impact.get("delta_inventory", 0.0))
+    d_backlog = float(last_impact.get("delta_backlog", 0.0))
+    net_health = float(last_impact.get("network_health", 0.0))
+    reason = str(last_impact.get("reason", "human_approval")).replace("approval:", "")
+
+    st.caption(
+        "Reference • "
+        f"last approved intervention ({reason}) at {impact_time}: "
+        f"inventory {d_inv:+.2f}, backlog {d_backlog:+.2f}, "
+        f"network health {net_health:.0%}"
+    )
+
+last_trace = getattr(mgr, "last_cognitive_result", None) or {}
+if last_trace:
+    coverage = last_trace.get("coverage_context", {}) or {}
+    if coverage:
+        total = int(coverage.get("total_nodes_scanned", 0) or 0)
+        vulnerable = len(coverage.get("vulnerable_node_ids", []) or [])
+        findings = int(coverage.get("vulnerability_count", 0) or 0)
+        rate = 100.0 * float(coverage.get("coverage_rate", 0.0) or 0.0)
+        scope = str(coverage.get("scan_scope", "custom_nodes")).replace("_", " ")
+        st.caption(
+            "Coverage • "
+            f"scope {scope} • scanned {total} nodes • vulnerable {vulnerable} • "
+            f"findings {findings} • coverage {rate:.1f}%"
+        )
+
+    trace_status_raw = str(last_trace.get("plan_status", "not_started")).lower()
+    trace_status = trace_status_raw.replace("_", " ").title()
+    trace_step = int(last_trace.get("current_plan_step", 0) or 0)
+    trace_events = len(last_trace.get("execution_log", []) or [])
+    status_color = {
+        "completed": "#10B981",
+        "in_progress": "#F59E0B",
+        "replanned": "#3B82F6",
+        "blocked": "#EF4444",
+        "not_started": "#6B7280",
+    }.get(trace_status_raw, "#6B7280")
+    st.markdown(
+        "<div style='font-size:0.82rem; color:#9CA3AF; margin-top:2px;'>"
+        "Reference • latest plan trace: "
+        f"<span style='color:{status_color}; font-weight:600;'>● {trace_status}</span>"
+        f" • step {trace_step} • events {trace_events}"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("🧭 Last Plan Trace", expanded=False):
+        plan_steps = last_trace.get("plan_steps", []) or []
+        if plan_steps:
+            rows = []
+            for i, step in enumerate(plan_steps):
+                rows.append(
+                    {
+                        "ID": step.get("step_id", f"P{i+1}"),
+                        "Owner": str(step.get("owner", "?")).title(),
+                        "Status": str(step.get("status", "pending")).replace("_", " ").title(),
+                        "Title": step.get("title", ""),
+                    }
+                )
+            st.dataframe(rows, use_container_width=True, hide_index=True)
+
+        exec_log = last_trace.get("execution_log", []) or []
+        if exec_log:
+            st.markdown("**Recent Events**")
+            for evt in exec_log[-6:]:
+                ts = str(evt.get("timestamp", "")).replace("T", " ")[:19]
+                event = str(evt.get("event", "unknown")).replace("_", " ")
+                sid = evt.get("step_id", "-")
+                st.caption(f"{ts} — {event} • step {sid}")
+
+        notes = last_trace.get("reflection_notes", []) or []
+        if notes:
+            st.markdown("**Reflection Notes**")
+            for note in notes[-4:]:
+                st.caption(f"• {note}")
+
 # ── KPI Row ──
 k1, k2, k3, k4 = st.columns(4)
 snapshot = mgr.get_snapshot()
+agentic_kpis = mgr.get_agentic_kpis()
 
 with k1:
     st.metric("Total Inventory", _format_compact_number(snapshot["total_inventory"]))
@@ -192,15 +312,120 @@ with k3:
 with k4:
     st.metric("Active Events", _format_compact_number(len(snapshot["active_events"])))
 
+with st.expander("🧪 Agentic KPI Monitor", expanded=False):
+    policy = mgr.get_policy_thresholds()
+    st.caption(
+        "Active policy thresholds • "
+        f"baseline {float(policy.get('baseline_min_confidence', 0.55)):.2f} • "
+        f"medium {float(policy.get('medium_risk_min_confidence', 0.65)):.2f} • "
+        f"critical {float(policy.get('critical_min_confidence', 0.75)):.2f}"
+    )
+
+    a1, a2, a3, a4 = st.columns(4)
+    with a1:
+        st.metric(
+            "Autonomous Completion",
+            f"{100 * float(agentic_kpis.get('autonomous_completion_rate', 0.0)):.1f}%",
+            help="Share of recommendations auto-approved by governance policy.",
+        )
+    with a2:
+        st.metric(
+            "Human Override Rate",
+            f"{100 * float(agentic_kpis.get('human_override_rate', 0.0)):.1f}%",
+            help="Rejected recommendations divided by all human-reviewed recommendations.",
+        )
+    with a3:
+        st.metric(
+            "Mean Replans / Run",
+            f"{float(agentic_kpis.get('mean_replans_per_run', 0.0)):.2f}",
+            help="Average number of replans triggered per workflow run.",
+        )
+    with a4:
+        st.metric(
+            "Plan Completion",
+            f"{100 * float(agentic_kpis.get('plan_completion_rate', 0.0)):.1f}%",
+            help="Share of workflow runs that ended with completed plan status.",
+        )
+
+    st.caption(
+        f"Workflow runs: {int(agentic_kpis.get('workflow_runs', 0))} • "
+        f"Recommendations: {int(agentic_kpis.get('total_recommendations', 0))} • "
+        f"Blocked-step rate: {100 * float(agentic_kpis.get('blocked_step_rate', 0.0)):.1f}%"
+    )
+
+    kpi_history = mgr.get_agentic_kpi_history(limit=200)
+    if len(kpi_history) >= 2:
+        import plotly.graph_objects as go
+
+        x_vals = list(range(1, len(kpi_history) + 1))
+        auto_vals = [100.0 * float(item.get("autonomous_completion_rate", 0.0)) for item in kpi_history]
+        override_vals = [100.0 * float(item.get("human_override_rate", 0.0)) for item in kpi_history]
+        completion_vals = [100.0 * float(item.get("plan_completion_rate", 0.0)) for item in kpi_history]
+
+        trend_fig = go.Figure()
+        trend_fig.add_trace(go.Scatter(x=x_vals, y=auto_vals, mode="lines+markers", name="Autonomous %", line=dict(color="#10B981", width=2)))
+        trend_fig.add_trace(go.Scatter(x=x_vals, y=override_vals, mode="lines+markers", name="Override %", line=dict(color="#EF4444", width=2)))
+        trend_fig.add_trace(go.Scatter(x=x_vals, y=completion_vals, mode="lines+markers", name="Plan Completion %", line=dict(color="#3B82F6", width=2)))
+        trend_fig.update_layout(
+            template="plotly_dark",
+            height=280,
+            margin=dict(l=20, r=20, t=20, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        )
+        trend_fig.update_xaxes(title_text="Snapshot")
+        trend_fig.update_yaxes(title_text="Rate (%)", range=[0, 100])
+        st.plotly_chart(trend_fig, use_container_width=True)
+
+    adaptation_log = mgr.get_policy_adaptation_log(limit=5)
+    if adaptation_log:
+        st.markdown("**Recent Policy Adaptations**")
+        for evt in adaptation_log[::-1]:
+            ts = str(evt.get("timestamp", "")).replace("T", " ")[:19]
+            before = evt.get("before", {}) or {}
+            after = evt.get("after", {}) or {}
+            reasons = "; ".join(evt.get("reasons", [])[:2])
+            st.caption(
+                f"{ts} • baseline {float(before.get('baseline_min_confidence', 0.0)):.2f}→"
+                f"{float(after.get('baseline_min_confidence', 0.0)):.2f}, medium "
+                f"{float(before.get('medium_risk_min_confidence', 0.0)):.2f}→"
+                f"{float(after.get('medium_risk_min_confidence', 0.0)):.2f}, critical "
+                f"{float(before.get('critical_min_confidence', 0.0)):.2f}→"
+                f"{float(after.get('critical_min_confidence', 0.0)):.2f}"
+                + (f" • {reasons}" if reasons else "")
+            )
+
 
 # ── Charts ──
-if mgr.model.current_step > 0:
+model_df = mgr.get_model_dataframe()
+if len(model_df) > 0:
     import numpy as np
     import pandas as pd
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    model_df = mgr.get_model_dataframe()
+    interventions = mgr.get_human_intervention_history(limit=50)
+    intervention_points = []
+    if interventions and "step" in model_df.columns:
+        # Map simulation step -> latest row index in the telemetry dataframe.
+        step_to_idx = {}
+        for idx, step_value in enumerate(model_df["step"].tolist()):
+            try:
+                step_to_idx[int(step_value)] = idx
+            except (TypeError, ValueError):
+                continue
+
+        for item in interventions:
+            step = item.get("step")
+            if step not in step_to_idx:
+                continue
+            intervention_points.append({
+                "x": step_to_idx[step],
+                "step": step,
+                "reason": str(item.get("reason", "human_approval")).replace("approval:", ""),
+                "timestamp": str(item.get("timestamp", "")),
+            })
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "📈 Inventory & Backlog",
@@ -234,6 +459,28 @@ if mgr.model.current_step > 0:
                 ),
                 secondary_y=True,
             )
+
+        if intervention_points and "total_inventory" in model_df.columns:
+            marker_x = [p["x"] for p in intervention_points]
+            marker_y = [float(model_df["total_inventory"].iloc[p["x"]]) for p in intervention_points]
+            marker_text = [
+                f"Human intervention<br>step {p['step']}<br>{p['reason']}<br>{p['timestamp']}"
+                for p in intervention_points
+            ]
+            fig.add_trace(
+                go.Scatter(
+                    x=marker_x,
+                    y=marker_y,
+                    mode="markers",
+                    name="Intervention",
+                    marker=dict(symbol="diamond-open", size=9, color="#9CA3AF", line=dict(width=1)),
+                    text=marker_text,
+                    hovertemplate="%{text}<extra></extra>",
+                ),
+                secondary_y=False,
+            )
+            for p in intervention_points:
+                fig.add_vline(x=p["x"], line_width=1, line_dash="dot", line_color="rgba(156,163,175,0.45)")
         fig.update_layout(
             template="plotly_dark",
             paper_bgcolor="rgba(0,0,0,0)",
@@ -260,6 +507,33 @@ if mgr.model.current_step > 0:
                 fill="tozeroy",
                 fillcolor="rgba(167,139,250,0.1)",
             ))
+
+            if intervention_points:
+                marker_x = [p["x"] for p in intervention_points]
+                marker_y = []
+                marker_text = []
+                for p in intervention_points:
+                    y_val = bullwhip.iloc[p["x"]]
+                    if pd.isna(y_val):
+                        continue
+                    marker_y.append(float(y_val))
+                    marker_text.append(
+                        f"Human intervention<br>step {p['step']}<br>{p['reason']}<br>{p['timestamp']}"
+                    )
+                if marker_y:
+                    valid_x = [p["x"] for p in intervention_points if not pd.isna(bullwhip.iloc[p["x"]])]
+                    fig2.add_trace(go.Scatter(
+                        x=valid_x,
+                        y=marker_y,
+                        mode="markers",
+                        name="Intervention",
+                        marker=dict(symbol="diamond-open", size=9, color="#9CA3AF", line=dict(width=1)),
+                        text=marker_text,
+                        hovertemplate="%{text}<extra></extra>",
+                    ))
+                    for x in valid_x:
+                        fig2.add_vline(x=x, line_width=1, line_dash="dot", line_color="rgba(156,163,175,0.45)")
+
             fig2.add_hline(
                 y=1.0, line_dash="dash", line_color="#4B5563",
                 annotation_text="No amplification",

@@ -643,58 +643,115 @@ def demo_cognition_module():
         result = graph.invoke(initial_state, config=config)
     
     # Show results
-    result_table = Table(title="Cognitive Workflow Results", box=box.ROUNDED)
-    result_table.add_column("Output", style="cyan")
-    result_table.add_column("Value", style="green")
-    
-    result_table.add_row("Iterations", str(result.get("iteration_count", 1)))
-    result_table.add_row("Final State", result.get("next_agent", "end"))
-    result_table.add_row("Recommendations", str(len(result.get("recommendations", []))))
-    
-    if result.get("analysis_results"):
-        analysis = result.get("analysis_results", {})
-        assessed_severity = analysis.get("assessed_severity", "unknown")
-        result_table.add_row("Analysis", "✓ Completed")
-        result_table.add_row("Assessed Severity", f"[bold yellow]{assessed_severity.upper()}[/bold yellow]")
-    if result.get("negotiation_results"):
-        result_table.add_row("Negotiation", "✓ Completed")
-    
+    analysis = result.get("analysis_results", {}) if result.get("analysis_results") else {}
+    assessed_severity = str(analysis.get("assessed_severity", "unknown")).lower()
+    severity_style = {
+        "critical": "bold red",
+        "high": "bold yellow",
+        "medium": "yellow",
+        "low": "green",
+        "unassessed": "dim",
+        "unknown": "dim",
+    }
+    urgency_note = {
+        "critical": "Immediate intervention recommended.",
+        "high": "Rapid mitigation is recommended.",
+        "medium": "Monitor closely and apply targeted actions.",
+        "low": "No urgent action required; continue monitoring.",
+    }.get(assessed_severity, "Severity could not be determined.")
+
+    recommendations = result.get("recommendations", [])
+    severity_tag = severity_style.get(assessed_severity, "dim")
+    summary_lines = [
+        f"[bold]Incident:[/bold] {alert.alert_type.value.replace('_', ' ').title()}",
+        f"[bold]Affected Nodes:[/bold] {', '.join(str(n) for n in alert.affected_nodes)}",
+        f"[bold]Assessed Severity:[/bold] [{severity_tag}]{assessed_severity.upper()}[/{severity_tag}]",
+        f"[bold]Recommended Actions:[/bold] {len(recommendations)}",
+        f"[bold]Guidance:[/bold] {urgency_note}",
+    ]
+    console.print(Panel("\n".join(summary_lines), title="Executive Summary", border_style="cyan"))
+
+    result_table = Table(title="Workflow Diagnostics", box=box.ROUNDED)
+    result_table.add_column("Check", style="cyan")
+    result_table.add_column("Status", style="green")
+    result_table.add_row("Workflow Iterations", str(result.get("iteration_count", 1)))
+    result_table.add_row("Terminal State", result.get("next_agent", "end"))
+    result_table.add_row("Analysis Stage", "✓ Completed" if analysis else "Not available")
+    result_table.add_row("Negotiation Stage", "✓ Completed" if result.get("negotiation_results") else "Not triggered")
     console.print(result_table)
     
     # Show recommendations
-    recommendations = result.get("recommendations", [])
     if recommendations:
         console.print(f"\n[cyan]Recommendations ({len(recommendations)} total):[/cyan]")
         rec_table = Table(title="Recommendations", box=box.ROUNDED)
         rec_table.add_column("#", style="dim", width=3)
-        rec_table.add_column("Type", style="yellow", width=20)
+        rec_table.add_column("Action", style="yellow", width=28)
         rec_table.add_column("Target Nodes", style="cyan", width=15)
-        rec_table.add_column("Reasoning", style="white")
+        rec_table.add_column("Confidence", style="green", width=12)
+        rec_table.add_column("Why This Action", style="white")
+
+        action_labels = {
+            "adjust_reorder_point": "Adjust reorder point",
+            "adjust_order_quantity": "Adjust order quantity",
+            "adjust_safety_stock": "Adjust safety stock",
+            "expedite_order": "Expedite order",
+            "change_supplier": "Change supplier",
+            "increase_capacity": "Increase capacity",
+            "redistribute_inventory": "Redistribute inventory",
+            "no_action": "No action",
+        }
         
         for i, rec in enumerate(recommendations, 1):  # Show all recommendations
             rec_type = rec.get("recommendation_type", "unknown")
+            action_name = action_labels.get(rec_type, rec_type.replace("_", " ").title())
             targets = str(rec.get("target_nodes", []))
             reasoning = rec.get("reasoning", "")
-            rec_table.add_row(str(i), rec_type, targets, reasoning)
+            confidence = rec.get("confidence")
+            confidence_text = f"{confidence * 100:.0f}%" if isinstance(confidence, (int, float)) else "N/A"
+            short_reason = reasoning if len(reasoning) <= 90 else reasoning[:87] + "..."
+            rec_table.add_row(str(i), action_name, targets, confidence_text, short_reason)
         
         console.print(rec_table)
     
-    # Show agent messages
+    # Show agent messages (presentation-friendly summary)
     messages = result.get("messages", [])
     if messages:
-        console.print(f"\n[cyan]Agent Messages ({len(messages)} total):[/cyan]")
-        msg_table = Table(title="Agent Messages", box=box.ROUNDED)
-        msg_table.add_column("#", style="dim", width=3)
-        msg_table.add_column("Message", style="white")
-        
-        for i, msg in enumerate(messages, 1):  # Show all messages
-            if hasattr(msg, "content"):
-                content = msg.content
-            else:
-                content = str(msg)
-            msg_table.add_row(str(i), content)
-        
-        console.print(msg_table)
+        normalized_messages = []
+        for msg in messages:
+            content = msg.content if hasattr(msg, "content") else str(msg)
+            content = " ".join(str(content).split())
+            if content:
+                normalized_messages.append(content)
+
+        # Keep only distinct, concise takeaways for easier walkthroughs.
+        takeaways = []
+        seen = set()
+        for content in normalized_messages:
+            key = content.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            short = content if len(content) <= 140 else content[:137] + "..."
+            takeaways.append(short)
+            if len(takeaways) == 3:
+                break
+
+        if takeaways:
+            takeaway_lines = [f"{idx}. {text}" for idx, text in enumerate(takeaways, 1)]
+            console.print(Panel(
+                "\n".join(takeaway_lines),
+                title="Key Takeaways (Top 3)",
+                border_style="green"
+            ))
+
+        detail_count = min(5, len(normalized_messages))
+        if detail_count > 0:
+            detail_table = Table(title=f"Detailed Messages (first {detail_count})", box=box.ROUNDED)
+            detail_table.add_column("#", style="dim", width=3)
+            detail_table.add_column("Message", style="white")
+            for i, content in enumerate(normalized_messages[:detail_count], 1):
+                detail_table.add_row(str(i), content)
+            console.print(detail_table)
     
     console.print("\n[green]✓ Cognition module working correctly![/green]\n")
 

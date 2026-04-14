@@ -7,19 +7,16 @@ supply chain partners, and proposing collaborative arrangements.
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
 from .state import SupplyChainState
-from .tools import (
-    get_upstream_suppliers,
-    get_downstream_customers,
-    forecast_demand,
-    propose_order_adjustment,
-    propose_policy_change,
-    get_node_inventory,
-    get_supply_chain_metrics,
-)
+from .tool_policy import select_tools_for_goal
+from .tools import (forecast_demand, get_downstream_customers,
+                    get_node_inventory, get_supply_chain_metrics,
+                    get_upstream_suppliers, propose_order_adjustment,
+                    propose_policy_change)
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +147,28 @@ def create_negotiator_agent(llm=None):
                 "requires_approval": True,  # Negotiation proposals always need approval
             })
 
+        # Sprint 1: mark negotiator-owned plan step completed.
+        plan_steps = state.get("plan_steps", []).copy()
+        current_plan_step = state.get("current_plan_step", 0)
+        execution_log = state.get("execution_log", []).copy()
+        if current_plan_step < len(plan_steps):
+            active_step = dict(plan_steps[current_plan_step])
+            if str(active_step.get("owner", "")).lower() == "negotiator":
+                active_step["status"] = "completed"
+                active_step["result"] = "Negotiator produced coordination proposals"
+                plan_steps[current_plan_step] = active_step
+                execution_log.append(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "event": "step_completed",
+                        "step_id": active_step.get("step_id"),
+                        "owner": "negotiator",
+                    }
+                )
+                current_plan_step += 1
+
+        plan_status = "completed" if plan_steps and current_plan_step >= len(plan_steps) else "in_progress"
+
         from langchain_core.messages import AIMessage
         message = (
             f"[Negotiator] Plan: {result.get('coordination_plan', 'N/A')}. "
@@ -160,6 +179,10 @@ def create_negotiator_agent(llm=None):
             "messages": [AIMessage(content=message)],
             "negotiation_results": result,
             "recommendations": recommendations,
+            "plan_steps": plan_steps,
+            "current_plan_step": current_plan_step,
+            "plan_status": plan_status,
+            "execution_log": execution_log,
             "next_agent": "supervisor",  # Report back to supervisor
         }
 
@@ -194,34 +217,66 @@ def _gather_network_data(state: SupplyChainState) -> Dict[str, Any]:
     data = {}
     alert = state.get("current_alert")
 
+    objective = str(state.get("objective") or "coordinate upstream and downstream response")
+    selected_tools = set(
+        select_tools_for_goal(
+            goal=objective,
+            owner="negotiator",
+            available_tools=[
+                "get_upstream_suppliers",
+                "get_downstream_customers",
+                "get_node_inventory",
+                "forecast_demand",
+                "get_supply_chain_metrics",
+            ],
+            max_tools=5,
+        )
+    )
+
     if not alert:
         return data
 
-    affected = alert.get("affected_nodes", [])
+    scan_scope = str(state.get("scan_scope", "custom_nodes"))
+    if scan_scope == "full_network":
+        affected = state.get("vulnerable_node_ids", []) or alert.get("affected_nodes", [])
+    else:
+        affected = alert.get("affected_nodes", [])
 
-    for node_id in affected[:5]:
+    node_limit = 10 if scan_scope == "full_network" else 5
+    for node_id in affected[:node_limit]:
         node_info = {}
 
-        try:
-            upstream = get_upstream_suppliers.invoke({"node_id": node_id})
-            if isinstance(upstream, dict) and upstream.get("success"):
-                node_info["suppliers"] = upstream.get("upstream_suppliers", [])
-        except Exception:
-            pass
+        if "get_upstream_suppliers" in selected_tools:
+            try:
+                upstream = get_upstream_suppliers.invoke({"node_id": node_id})
+                if isinstance(upstream, dict) and upstream.get("success"):
+                    node_info["suppliers"] = upstream.get("upstream_suppliers", [])
+            except Exception:
+                pass
 
-        try:
-            downstream = get_downstream_customers.invoke({"node_id": node_id})
-            if isinstance(downstream, dict) and downstream.get("success"):
-                node_info["customers"] = downstream.get("downstream_customers", [])
-        except Exception:
-            pass
+        if "get_downstream_customers" in selected_tools:
+            try:
+                downstream = get_downstream_customers.invoke({"node_id": node_id})
+                if isinstance(downstream, dict) and downstream.get("success"):
+                    node_info["customers"] = downstream.get("downstream_customers", [])
+            except Exception:
+                pass
 
-        try:
-            inv = get_node_inventory.invoke({"node_id": node_id})
-            if isinstance(inv, dict) and inv.get("success"):
-                node_info["inventory"] = inv
-        except Exception:
-            pass
+        if "get_node_inventory" in selected_tools:
+            try:
+                inv = get_node_inventory.invoke({"node_id": node_id})
+                if isinstance(inv, dict) and inv.get("success"):
+                    node_info["inventory"] = inv
+            except Exception:
+                pass
+
+        if "forecast_demand" in selected_tools:
+            try:
+                forecast = forecast_demand.invoke({"node_ids": [node_id], "horizon": 7})
+                if isinstance(forecast, dict) and forecast.get("success"):
+                    node_info["forecast"] = forecast.get("predictions", {}).get(node_id) or forecast.get("predictions", {}).get(str(node_id), [])
+            except Exception:
+                pass
 
         if node_info:
             data[str(node_id)] = node_info

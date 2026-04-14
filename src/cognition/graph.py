@@ -5,24 +5,26 @@ Defines the multi-agent workflow that orchestrates Supervisor, Analyst,
 and Negotiator agents for supply chain decision-making.
 
 Workflow:
-    START → Supervisor → {Analyst, Negotiator, Human, END}
-                Analyst → Supervisor
-            Negotiator → Supervisor
+    START → Planner → Supervisor → {Analyst, Negotiator, Human, END}
+                         Analyst → Supervisor
+                     Negotiator → Supervisor
 """
 
 import logging
 from typing import Any, Dict, Optional
 
+from .analyst import create_analyst_agent
+from .executor import create_executor_node
+from .negotiator import create_negotiator_agent
+from .planner import create_planner_agent
 from .state import SupplyChainState
 from .supervisor import create_supervisor_agent
-from .analyst import create_analyst_agent
-from .negotiator import create_negotiator_agent
 
 logger = logging.getLogger(__name__)
 
 try:
-    from langgraph.graph import END, StateGraph
     from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, StateGraph
     HAS_LANGGRAPH = True
 except ImportError:
     HAS_LANGGRAPH = False
@@ -37,6 +39,8 @@ def _route_supervisor(state: SupplyChainState) -> str:
     """
     next_agent = state.get("next_agent", "end")
 
+    if next_agent == "executor":
+        return "executor"
     if next_agent == "analyst":
         return "analyst"
     elif next_agent == "negotiator":
@@ -45,6 +49,21 @@ def _route_supervisor(state: SupplyChainState) -> str:
         return "human_review"
     else:
         return "end"
+
+
+def _route_executor(state: SupplyChainState) -> str:
+    """Routing for execution controller outputs."""
+    next_agent = state.get("next_agent", "supervisor")
+
+    if next_agent == "analyst":
+        return "analyst"
+    if next_agent == "negotiator":
+        return "negotiator"
+    if next_agent == "supervisor":
+        return "supervisor"
+    if next_agent == "human":
+        return "human_review"
+    return "supervisor"
 
 
 def _human_review_node(state: SupplyChainState) -> Dict[str, Any]:
@@ -95,6 +114,8 @@ def create_supply_chain_graph(
         return _create_fallback_graph(llm)
 
     # Create agent nodes
+    planner = create_planner_agent(llm)
+    executor = create_executor_node()
     supervisor = create_supervisor_agent(llm)
     analyst = create_analyst_agent(llm)
     negotiator = create_negotiator_agent(llm)
@@ -103,13 +124,18 @@ def create_supply_chain_graph(
     graph = StateGraph(SupplyChainState)
 
     # Add nodes
+    graph.add_node("planner", planner)
+    graph.add_node("executor", executor)
     graph.add_node("supervisor", supervisor)
     graph.add_node("analyst", analyst)
     graph.add_node("negotiator", negotiator)
     graph.add_node("human_review", _human_review_node)
 
     # Set entry point
-    graph.set_entry_point("supervisor")
+    graph.set_entry_point("planner")
+
+    # Planner routes to supervisor for high-level routing.
+    graph.add_edge("planner", "supervisor")
 
     # Add conditional edges from supervisor
     graph.add_conditional_edges(
@@ -118,8 +144,21 @@ def create_supply_chain_graph(
         {
             "analyst": "analyst",
             "negotiator": "negotiator",
+            "executor": "executor",
             "human_review": "human_review",
             "end": END,
+        },
+    )
+
+    # Execution controller dispatches to a specialist.
+    graph.add_conditional_edges(
+        "executor",
+        _route_executor,
+        {
+            "analyst": "analyst",
+            "negotiator": "negotiator",
+            "supervisor": "supervisor",
+            "human_review": "human_review",
         },
     )
 
@@ -145,10 +184,12 @@ class FallbackGraph:
     """
     Fallback sequential workflow when LangGraph is not installed.
 
-    Runs agents in sequence: Supervisor → Analyst → Supervisor → END
+    Runs agents in sequence: Planner → Supervisor → Analyst/Negotiator → Supervisor → END
     """
 
     def __init__(self, llm=None):
+        self.planner = create_planner_agent(llm)
+        self.executor = create_executor_node()
         self.supervisor = create_supervisor_agent(llm)
         self.analyst = create_analyst_agent(llm)
         self.negotiator = create_negotiator_agent(llm)
@@ -156,6 +197,14 @@ class FallbackGraph:
     def invoke(self, state: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Run the workflow sequentially."""
         current_state = dict(state)
+
+        # Initial planning phase
+        try:
+            planner_update = self.planner(current_state)
+            current_state.update(planner_update)
+        except Exception:
+            # Continue with supervisor path even if planning fails.
+            current_state.setdefault("plan_status", "not_started")
 
         for iteration in range(10):  # Max iterations
             # Supervisor decides
@@ -178,6 +227,11 @@ class FallbackGraph:
             current_state.update(update)
 
             next_agent = current_state.get("next_agent", "end")
+
+            if next_agent == "executor":
+                exec_update = self.executor(current_state)
+                current_state.update(exec_update)
+                next_agent = current_state.get("next_agent", "supervisor")
 
             if next_agent == "end" or next_agent == "human":
                 break

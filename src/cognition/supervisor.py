@@ -7,6 +7,7 @@ Receives alerts, delegates to Analyst/Negotiator, and makes final decisions.
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -75,6 +76,25 @@ def _format_context(state: SupplyChainState) -> str:
     feedback = state.get("human_feedback")
     if feedback:
         parts.append(f"HUMAN FEEDBACK: {feedback}")
+
+    # Plan status
+    objective = state.get("objective")
+    plan_steps = state.get("plan_steps", [])
+    current_plan_step = state.get("current_plan_step", 0)
+    if objective:
+        parts.append(f"OBJECTIVE: {objective}")
+    if plan_steps:
+        progress = f"{min(current_plan_step, len(plan_steps))}/{len(plan_steps)}"
+        active = None
+        if current_plan_step < len(plan_steps):
+            active = plan_steps[current_plan_step]
+        plan_line = f"PLAN PROGRESS: {progress}"
+        if active:
+            plan_line += (
+                f" | active={active.get('step_id', '?')}:{active.get('title', '')} "
+                f"owner={active.get('owner', 'unknown')} status={active.get('status', 'pending')}"
+            )
+        parts.append(plan_line)
 
     return "\n\n".join(parts) if parts else "No context available."
 
@@ -149,6 +169,75 @@ def create_supervisor_agent(llm=None):
                 "next_agent": "end",
                 "iteration_count": iteration + 1,
                 "error": "Maximum iteration count reached",
+            }
+
+        # Plan-aware routing (Sprint 1): dispatch through executor and support replanning.
+        plan_steps = state.get("plan_steps", [])
+        current_plan_step = state.get("current_plan_step", 0)
+        execution_log = state.get("execution_log", []).copy()
+        reflection_notes = state.get("reflection_notes", []).copy()
+        replan_count = state.get("replan_count", 0)
+        max_replans = state.get("max_replans", 2)
+
+        if plan_steps and current_plan_step < len(plan_steps):
+            active_step = dict(plan_steps[current_plan_step])
+            status = str(active_step.get("status", "pending")).lower()
+
+            if status == "blocked":
+                note = (
+                    f"Step {active_step.get('step_id', '?')} blocked: "
+                    f"{active_step.get('error', 'unspecified error')}"
+                )
+                reflection_notes.append(note)
+
+                if replan_count < max_replans:
+                    execution_log.append(
+                        {
+                            "timestamp": datetime.now().isoformat(),
+                            "event": "replan_triggered",
+                            "step_id": active_step.get("step_id"),
+                            "reason": active_step.get("error", "blocked"),
+                            "replan_count": replan_count + 1,
+                        }
+                    )
+                    return {
+                        "reflection_notes": reflection_notes,
+                        "execution_log": execution_log,
+                        "replan_count": replan_count + 1,
+                        "plan_status": "replanned",
+                        "next_agent": "planner",
+                        "iteration_count": iteration + 1,
+                    }
+
+                execution_log.append(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "event": "escalation_required",
+                        "step_id": active_step.get("step_id"),
+                        "reason": active_step.get("error", "blocked"),
+                    }
+                )
+                return {
+                    "reflection_notes": reflection_notes,
+                    "execution_log": execution_log,
+                    "plan_status": "blocked",
+                    "next_agent": "human",
+                    "iteration_count": iteration + 1,
+                }
+
+            if status in {"pending", "in_progress"}:
+                return {
+                    "plan_status": "in_progress",
+                    "next_agent": "executor",
+                    "iteration_count": iteration + 1,
+                }
+
+        # Plan finished
+        if plan_steps and current_plan_step >= len(plan_steps):
+            return {
+                "plan_status": "completed",
+                "next_agent": "end",
+                "iteration_count": iteration + 1,
             }
 
         # Use LLM if available

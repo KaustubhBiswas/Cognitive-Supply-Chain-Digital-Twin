@@ -7,10 +7,12 @@ Bullwhip Effect assessment, and inventory policy recommendations.
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
 from .state import RecommendationType, SupplyChainState
+from .tool_policy import select_tools_for_goal
 from .tools import (analyze_disruption_propagation, compute_bullwhip_ratio,
                     estimate_time_to_impact, forecast_demand,
                     generate_cross_node_recommendations,
@@ -146,6 +148,28 @@ def create_analyst_agent(llm=None):
                 "requires_approval": rec.get("confidence", 0) < 0.9,
             })
 
+        # Sprint 1: mark analyst-owned plan step completed.
+        plan_steps = state.get("plan_steps", []).copy()
+        current_plan_step = state.get("current_plan_step", 0)
+        execution_log = state.get("execution_log", []).copy()
+        if current_plan_step < len(plan_steps):
+            active_step = dict(plan_steps[current_plan_step])
+            if str(active_step.get("owner", "")).lower() == "analyst":
+                active_step["status"] = "completed"
+                active_step["result"] = "Analyst completed risk/data assessment"
+                plan_steps[current_plan_step] = active_step
+                execution_log.append(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "event": "step_completed",
+                        "step_id": active_step.get("step_id"),
+                        "owner": "analyst",
+                    }
+                )
+                current_plan_step += 1
+
+        plan_status = "completed" if plan_steps and current_plan_step >= len(plan_steps) else "in_progress"
+
         # Build message
         from langchain_core.messages import AIMessage
         message = (
@@ -158,6 +182,10 @@ def create_analyst_agent(llm=None):
             "messages": [AIMessage(content=message)],
             "analysis_results": analysis,
             "recommendations": recommendations,
+            "plan_steps": plan_steps,
+            "current_plan_step": current_plan_step,
+            "plan_status": plan_status,
+            "execution_log": execution_log,
             "next_agent": "supervisor",  # Report back to supervisor
         }
 
@@ -193,34 +221,59 @@ def _gather_analysis_data(state: SupplyChainState) -> Dict[str, Any]:
     """Gather data from tools for analysis."""
     data = {}
 
-    try:
-        # Get overall metrics
-        metrics = get_supply_chain_metrics.invoke({})
-        if isinstance(metrics, dict) and metrics.get("success"):
-            data["metrics"] = metrics
-    except Exception as e:
-        logger.debug(f"Could not gather metrics: {e}")
+    objective = str(state.get("objective") or "analyze risk demand inventory")
+    selected_tools = set(
+        select_tools_for_goal(
+            goal=objective,
+            owner="analyst",
+            available_tools=[
+                "get_supply_chain_metrics",
+                "compute_bullwhip_ratio",
+                "get_node_inventory",
+                "get_all_inventories",
+                "get_historical_orders",
+                "forecast_demand",
+                "get_upstream_suppliers",
+                "get_downstream_customers",
+            ],
+            max_tools=6,
+        )
+    )
 
-    try:
-        # Get bullwhip ratio
-        bullwhip = compute_bullwhip_ratio.invoke({})
-        if isinstance(bullwhip, dict) and bullwhip.get("success"):
-            data["bullwhip"] = bullwhip
-    except Exception as e:
-        logger.debug(f"Could not compute bullwhip: {e}")
+    if "get_supply_chain_metrics" in selected_tools:
+        try:
+            metrics = get_supply_chain_metrics.invoke({})
+            if isinstance(metrics, dict) and metrics.get("success"):
+                data["metrics"] = metrics
+        except Exception as e:
+            logger.debug(f"Could not gather metrics: {e}")
+
+    if "compute_bullwhip_ratio" in selected_tools:
+        try:
+            bullwhip = compute_bullwhip_ratio.invoke({})
+            if isinstance(bullwhip, dict) and bullwhip.get("success"):
+                data["bullwhip"] = bullwhip
+        except Exception as e:
+            logger.debug(f"Could not compute bullwhip: {e}")
 
     # Get data for affected nodes
     alert = state.get("current_alert")
     if alert:
-        affected = alert.get("affected_nodes", [])
+        scan_scope = str(state.get("scan_scope", "custom_nodes"))
+        if scan_scope == "full_network":
+            affected = state.get("vulnerable_node_ids", []) or alert.get("affected_nodes", [])
+        else:
+            affected = alert.get("affected_nodes", [])
         node_data = {}
-        for node_id in affected[:5]:  # Limit to 5 nodes
-            try:
-                inv = get_node_inventory.invoke({"node_id": node_id})
-                if isinstance(inv, dict) and inv.get("success"):
-                    node_data[node_id] = inv
-            except Exception:
-                pass
+        node_limit = 10 if scan_scope == "full_network" else 5
+        for node_id in affected[:node_limit]:
+            if "get_node_inventory" in selected_tools:
+                try:
+                    inv = get_node_inventory.invoke({"node_id": node_id})
+                    if isinstance(inv, dict) and inv.get("success"):
+                        node_data[node_id] = inv
+                except Exception:
+                    pass
         if node_data:
             data["affected_node_details"] = node_data
         
