@@ -65,6 +65,21 @@ python scripts/run_agentic_benchmarks.py --trials 4 --seed 42 --mode constrained
 
 # Run agentic KPI CI gate on benchmark output
 python scripts/agentic_ci_gate.py --benchmark data/benchmarks/agentic_benchmark_latest.json
+## 🧠 RAG Setup (Local Documents)
+
+Use a local folder of PDFs / TXT / MD files to build the vector store, then
+RAG will show as enabled in the Agent Chat log.
+
+```bash
+# Install RAG extras (ChromaDB, embeddings, PDF ingestion, BM25)
+pip install -e ".[rag]"
+
+# Build a persisted vector store from your local folder
+python scripts/build_rag_store.py --source-dir "RAG source" --doc-type report
+```
+
+By default the vector store is created at `data/vectorstore`, which the app
+loads automatically on startup.
 ```
 
 ## 🧭 Rollout Modes (Sprint 4)

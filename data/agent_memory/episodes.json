@@ -1186,6 +1186,1506 @@
       ],
       "reflection_notes": [],
       "recommendations_count": 4
+    },
+    {
+      "timestamp": "2026-04-22T10:43:50.389095",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-22T10:43:06.740103",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 5,
+          "vulnerable_nodes": 5
+        },
+        {
+          "timestamp": "2026-04-22T10:43:06.741102",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:28.422373",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T10:43:28.422373",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:28.466384",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-22T10:43:28.467372",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.134303",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.135303",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.135303",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.135303",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.136300",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.136300",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.136300",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:43:50.136300",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 26
+    },
+    {
+      "timestamp": "2026-04-22T10:56:50.108389",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-22T10:56:15.032855",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 5,
+          "vulnerable_nodes": 5
+        },
+        {
+          "timestamp": "2026-04-22T10:56:15.033860",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:30.526163",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T10:56:30.526686",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:30.545271",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-22T10:56:30.545271",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.019709",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.020721",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.021718",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.022717",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.022717",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.023716",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.023716",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T10:56:50.024715",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 28
+    },
+    {
+      "timestamp": "2026-04-22T11:21:27.095434",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-22T11:20:37.578290",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 7,
+          "vulnerable_nodes": 7
+        },
+        {
+          "timestamp": "2026-04-22T11:20:37.579293",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:02.860247",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T11:21:02.860247",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:02.930980",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-22T11:21:02.932144",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.031831",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.031831",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.032830",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.033339",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.033339",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.033982",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.033982",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-22T11:21:27.033982",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 28
+    },
+    {
+      "timestamp": "2026-04-29T02:05:33.077393",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-29T02:05:05.431839",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 3,
+          "vulnerable_nodes": 3
+        },
+        {
+          "timestamp": "2026-04-29T02:05:05.432921",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:13.855968",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T02:05:13.855968",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:14.263739",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-29T02:05:14.265744",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.585536",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.586544",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.586544",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.590541",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.590541",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.591531",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.591531",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:05:32.591531",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 23
+    },
+    {
+      "timestamp": "2026-04-29T02:32:22.325022",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-29T02:31:33.554071",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 7,
+          "vulnerable_nodes": 7
+        },
+        {
+          "timestamp": "2026-04-29T02:31:33.555071",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:31:56.223884",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T02:31:56.224893",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:31:56.274884",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-29T02:31:56.276874",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.223403",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.224401",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.224401",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.226945",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.227993",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.234011",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.235582",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T02:32:22.236642",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 28
+    },
+    {
+      "timestamp": "2026-04-29T10:35:24.090710",
+      "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+      "alert_type": "demand_spike",
+      "severity": "unassessed",
+      "affected_nodes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "plan_status": "in_progress",
+      "replan_count": 0,
+      "plan_steps": [
+        {
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "description": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ],
+          "success_criteria": "High/critical risks ranked across vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "description": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "status": "completed",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ],
+          "success_criteria": "Coordinated mitigation batches proposed for multi-node vulnerabilities",
+          "result": "Negotiator produced coordination proposals"
+        },
+        {
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "description": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "status": "completed",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Coverage and residual-risk report generated for all vulnerable nodes",
+          "result": "Analyst completed risk/data assessment"
+        },
+        {
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "description": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "status": "in_progress",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ],
+          "success_criteria": "Actions classified by risk with escalation and rollback notes"
+        }
+      ],
+      "execution_log": [
+        {
+          "timestamp": "2026-04-29T10:35:21.039971",
+          "event": "plan_created",
+          "steps": 4,
+          "objective": "Assess and mitigate vulnerabilities across the entire supply chain.",
+          "scan_scope": "full_network",
+          "vulnerability_count": 0,
+          "vulnerable_nodes": 0
+        },
+        {
+          "timestamp": "2026-04-29T10:35:21.045866",
+          "event": "step_started",
+          "step_id": "P1",
+          "title": "Triaging network-wide vulnerabilities",
+          "owner": "analyst",
+          "required_tools": [
+            "get_node_inventory",
+            "get_upstream_suppliers",
+            "get_downstream_customers",
+            "get_supply_chain_metrics"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:22.519928",
+          "event": "step_completed",
+          "step_id": "P1",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T10:35:22.523823",
+          "event": "step_started",
+          "step_id": "P2",
+          "title": "Design staged mitigation batches",
+          "owner": "negotiator",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_upstream_suppliers",
+            "get_downstream_customers"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:22.592972",
+          "event": "step_completed",
+          "step_id": "P2",
+          "owner": "negotiator"
+        },
+        {
+          "timestamp": "2026-04-29T10:35:22.597933",
+          "event": "step_started",
+          "step_id": "P3",
+          "title": "Validate mitigation coverage and residual risk",
+          "owner": "analyst",
+          "required_tools": [
+            "compute_bullwhip_ratio",
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:23.967140",
+          "event": "step_completed",
+          "step_id": "P3",
+          "owner": "analyst"
+        },
+        {
+          "timestamp": "2026-04-29T10:35:23.972135",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:23.976219",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:24.003091",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:24.006099",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:24.010311",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:24.014469",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        },
+        {
+          "timestamp": "2026-04-29T10:35:24.019478",
+          "event": "step_started",
+          "step_id": "P4",
+          "title": "Finalize governance-ready execution package",
+          "owner": "supervisor",
+          "required_tools": [
+            "get_node_inventory",
+            "get_supply_chain_metrics",
+            "compute_bullwhip_ratio",
+            "get_all_inventories"
+          ]
+        }
+      ],
+      "reflection_notes": [],
+      "recommendations_count": 30
     }
   ]
 }

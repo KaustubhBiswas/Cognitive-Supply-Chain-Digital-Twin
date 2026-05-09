@@ -50,7 +50,7 @@ Risk Assessment Framework:
 - HIGH: Multi-node issues or significant metric deviations
 - CRITICAL: System-wide disruptions or cascading failures
 
-You MUST respond with valid JSON in this format:
+You MUST respond with valid JSON in this format (values are placeholders; compute per case, not fixed):
 {
     "findings": "Summary of your analysis findings",
     "risk_level": "low|medium|high|critical",
@@ -67,7 +67,7 @@ You MUST respond with valid JSON in this format:
     "metrics": {
         "bullwhip_ratio": 1.5,
         "demand_trend": "increasing|stable|decreasing",
-        "risk_score": 0.6
+        "risk_score": 0.0
     },
     "knowledge_applied": "Optional: summary of knowledge base insights used"
 }

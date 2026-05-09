@@ -159,7 +159,7 @@ with st.sidebar:
         mgr.set_autonomy_enabled(new_autonomy)
         st.rerun()
 
-    if st.button("⏪ Emergency Rollback (Shadow)", use_container_width=True):
+    if st.button("Emergency Rollback (Shadow)", use_container_width=True):
         mgr.set_rollout_mode("shadow")
         mgr.set_autonomy_enabled(False)
         st.rerun()
@@ -167,7 +167,7 @@ with st.sidebar:
     st.divider()
 
     # ── Simulation Controls ──
-    st.markdown("### ⚙️ Simulation")
+    st.markdown("### Simulation")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -188,7 +188,7 @@ with st.sidebar:
     st.divider()
 
     # ── Event Injection ──
-    st.markdown("### 💥 Inject Event")
+    st.markdown("### Inject Event")
     event_type = st.selectbox(
         "Event Type",
         ["demand_shock", "supply_disruption", "factory_issue", "lead_time_increase"],
@@ -196,7 +196,7 @@ with st.sidebar:
     )
     magnitude = st.slider("Magnitude", 1.0, 5.0, 2.0, 0.5)
     duration = st.slider("Duration (steps)", 1, 30, 10)
-    if st.button("⚡ Inject", use_container_width=True):
+    if st.button("Inject", use_container_width=True):
         mgr.inject_event(event_type, magnitude, duration)
         st.rerun()
 
